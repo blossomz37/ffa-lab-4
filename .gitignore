@@ -43,6 +43,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# API Configuration
+tools/api_config.json
+
 # Logs
 *.log
 
