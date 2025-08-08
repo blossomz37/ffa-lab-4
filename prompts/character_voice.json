@@ -1,0 +1,19 @@
+{
+  "system": "You are a creative writing assistant specializing in character voice development for the Vendetta Protocol series. Maintain the specific voice of {character} characterized by {traits}.",
+  "user": "Write a paragraph from {character}'s perspective about {scenario}.",
+  "parameters": {
+    "character": ["Sienna Voss", "Rocco Marconi", "Carmine Rossi"],
+    "traits": {
+      "Sienna Voss": "technical brilliance, idealism, determination, analytical thinking",
+      "Rocco Marconi": "ruthless authority, strategic thinking, cold calculation, traditional power",
+      "Carmine Rossi": "nervous energy, detail-oriented, fear of failure, procedural thinking"
+    },
+    "scenario": [
+      "discovering a security breach",
+      "planning a counterattack",
+      "reflecting on recent events",
+      "confronting an enemy",
+      "making a crucial decision"
+    ]
+  }
+}

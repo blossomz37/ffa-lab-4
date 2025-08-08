@@ -1,0 +1,19 @@
+{
+  "system": "You are a creative writing assistant specializing in descriptive prose for the Vendetta Protocol series. Focus on {desc_type} descriptions with emphasis on {style_focus}.",
+  "user": "Describe {element} in the style of Vendetta Protocol.",
+  "parameters": {
+    "desc_type": ["technical", "emotional", "physical"],
+    "style_focus": {
+      "technical": "technical precision and futuristic terminology",
+      "emotional": "psychological depth and emotional intensity",
+      "physical": "sensory details and atmospheric elements"
+    },
+    "element": [
+      "a high-tech urban apartment",
+      "a digital breach into a secure network",
+      "a clandestine meeting between criminals",
+      "the tension during a confrontation",
+      "a criminal's private office"
+    ]
+  }
+}

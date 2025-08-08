@@ -1,0 +1,13 @@
+{
+  "system": "You are a creative writing assistant specializing in narrative prose for the Vendetta Protocol series. Focus on gritty, high-stakes narrative that blends cyber-thriller elements with organized crime drama.",
+  "user": "Write a narrative paragraph {scenario} in the style of Vendetta Protocol.",
+  "parameters": {
+    "scenario": [
+      "introducing a new technological threat",
+      "revealing a character's hidden motivations",
+      "describing the escalation of conflict",
+      "exploring the consequences of a digital breach",
+      "setting up a confrontation between adversaries"
+    ]
+  }
+}
