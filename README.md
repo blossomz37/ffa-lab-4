@@ -138,12 +138,15 @@ Adopt consistent, sortable names so ordering is predictable:
 | `chapter_02.md` | chapter_02.md | Natural sort keeps order |
 | `lore_*` | lore_factions.md | Background / world info (can ignore) |
 | `char_*` | char_sienna.md | Character dossiers |
+| `dossier_*` | dossier_style_guide.md | Story planning dossier (style guide, premise, outlines) |
 | `discard_*` | discard_oldscene.md | Outdated (ignored via `--ignore_prefix discard_`) |
 
 Ignore strategy examples:
 ```bash
 python scripts/prepare_dataset.py --ignore_prefix discard_ --ignore_prefix lore_ --file_pattern "*.md"
 ```
+
+If you want to exclude planning materials entirely you could also add `--ignore_prefix dossier_`; otherwise they're included and can provide stylistic context.
 
 What happens:
 1. Parses markdown documents.

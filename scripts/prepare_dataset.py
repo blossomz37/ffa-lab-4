@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
-"""
-Dataset Builder for Fine-tuning (no API key required)
+"""Dataset Builder for Fine-tuning (no API key required)
 
 What this script does:
 - Reads your source texts from the "original documents" folder
 - Extracts patterns (dialogue, narrative, descriptive, plot cues)
 - Formats examples into JSONL for training/validation
 
+Recommended naming conventions (you can still use others):
+- chapter_01.md, chapter_02.md ... main narrative sequence
+- char_<name>.md character dossiers (char_sienna.md)
+- lore_<topic>.md setting / world-building (lore_factions.md)
+- dossier_<aspect>.md planning docs like style guide, premise, outline (dossier_outline.md)
+- discard_<anything>.md outdated pieces you want to skip
+
+To exclude any category supply --ignore_prefix for each (e.g. --ignore_prefix discard_ --ignore_prefix dossier_).
+
 Notes for students:
 - You do NOT need an OpenAI API key to run this script.
 - Output files go to the datasets/ folder.
-- You can iterate: add or edit source documents, rerun, and revalidate.
+- Iterate safely: edit sources, re-run, then validate again.
 """
 
 import json
@@ -85,6 +93,22 @@ class DatasetBuilder:
         if not markdown_files:
             print("⚠️  No source files matched. Adjust naming or pattern.")
             return
+
+        # Report category counts (helps students verify naming)
+        categories = {"chapter_":0, "char_":0, "lore_":0, "dossier_":0, "discard_":0, "other":0}
+        for fp in markdown_files:
+            base = os.path.basename(fp).lower()
+            matched = False
+            for pref in list(categories.keys())[:-1]:  # exclude 'other'
+                if base.startswith(pref):
+                    categories[pref] += 1
+                    matched = True
+                    break
+            if not matched:
+                categories["other"] += 1
+        print("Category counts:")
+        for k,v in categories.items():
+            print(f"  {k:<9} {v}")
 
         for file_path in markdown_files:
             print(f"Processing {os.path.basename(file_path)}...")
@@ -585,7 +609,7 @@ def main():
     parser.add_argument("--file_pattern", default="*.md",
                         help="Glob pattern to select source files (default: *.md)")
     parser.add_argument("--ignore_prefix", action="append", default=[],
-                        help="Filename prefix to ignore (can be repeated), e.g. --ignore_prefix draft_ --ignore_prefix old_")
+                        help="Filename prefix to ignore (repeatable). Common: discard_, dossier_, lore_, draft_, old_")
     
     args = parser.parse_args()
     
