@@ -28,13 +28,8 @@ This is a novel-writing project that involves collaboration between a human auth
 ## Commands
 - `python scripts/prepare_dataset.py`: Extract patterns from writing samples and create JSONL datasets
   - Options:
-    - `--source_dir`: Directory containing source materials (default: "../original documents")
-    - `--output_dir`: Directory to save output files (default: "../datasets")
-    - `--scan_only`: Only scan source materials, don't generate dataset
-    - `--upload`: Upload dataset to OpenAI after generation
-    - `--submit`: Submit fine-tuning job after upload
-    - `--suffix`: Suffix for the fine-tuned model name
-    - `--model`: Base model to fine-tune (default: "gpt-3.5-turbo")
+    - `--source_dir`: Directory containing source materials (default: "original documents")
+    - `--output_dir`: Directory to save output files (default: "datasets")
 
 - `python scripts/validate_dataset.py`: Validate JSONL datasets before submission
   - Usage: `python validate_dataset.py [file_paths] [options]`
@@ -69,15 +64,15 @@ The fine-tuning dataset uses OpenAI's JSONL conversation format:
   "messages": [
     {
       "role": "system", 
-      "content": "You are a creative writing assistant that specializes in [SPECIFIC_WRITING_ELEMENT], maintaining the style patterns of the Vendetta Protocol series. Focus on [STYLE_GUIDELINE] and [CHARACTER_VOICE]."
+      "content": "You are a creative writing assistant that specializes in [WRITING_TYPE], creating engaging and vivid content."
     },
     {
       "role": "user", 
-      "content": "[INSTRUCTION/REQUEST]"
+      "content": "[WRITING_PROMPT]"
     },
     {
       "role": "assistant", 
-      "content": "[DESIRED_OUTPUT_IN_YOUR_STYLE]"
+      "content": "[WRITING_EXAMPLE]"
     }
   ]
 }
@@ -86,18 +81,20 @@ The fine-tuning dataset uses OpenAI's JSONL conversation format:
 ### Core Categories for Training Examples
 The training examples are organized into these categories:
 
-1. **Character Voice Development**
-   - For maintaining the distinct voices of key characters (Sienna Voss, Rocco Marconi, Carmine Rossi)
-   - Includes perspective-specific narration
+1. **Dialogue Writing**
+   - Natural conversation patterns
+   - Speaker attribution
+   - Character interactions
 
-2. **Descriptive Prose**
-   - Technical descriptions (AI systems, digital environments)
-   - Emotional descriptions (character feelings, tension)
-   - Physical descriptions (settings, people, actions)
+2. **Narrative Writing**
+   - Plot development
+   - Action sequences
+   - Scene transitions
 
-3. **Dialogue**
-   - Character-specific speech patterns
-   - Relationship dynamics between characters
+3. **Descriptive Writing**
+   - Sensory details
+   - Setting descriptions
+   - Character observations
 
 4. **Narrative Style**
    - Overall narrative flow and pacing

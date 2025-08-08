@@ -1,99 +1,168 @@
 #!/usr/bin/env python3
 """
-Vendetta Protocol Fine-tuning Dataset Builder
+Dataset Builder for Fine-tuning
 
-This script processes writing samples from the Vendetta Protocol series and
-prepares them as training data for fine-tuning language models.
+This script processes writing samples and prepares them as training data for fine-tuning
+language models, with a focus on dialogue, narrative, and descriptive writing.
 """
 
 import json
 import os
 import re
 import glob
-import io
 import random
-from typing import List, Dict, Any, Tuple, Optional
-from tenacity import retry, wait_random_exponential, stop_after_attempt
+from typing import List, Dict, Any, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
 
-class FineTuneDatasetBuilder:
-    def __init__(self, source_dir, output_dir):
-        """Initialize the dataset builder with source and output directories.
+class DatasetBuilder:
+    def __init__(self, source_dir: str, output_dir: str):
+        """Initialize the dataset builder
         
         Args:
-            source_dir (str): Directory containing source material
-            output_dir (str): Directory to save output files
+            source_dir: Directory containing source material
+            output_dir: Directory to save output files
         """
-        # Load environment variables from .env file
+        # Load environment variables
         load_dotenv()
         
-        self.source_dir = source_dir
-        self.output_dir = output_dir
-        self.style_patterns = {}
-        self.character_voices = {
-            "sienna_voss": {},
-            "rocco_marconi": {},
-            "carmine_rossi": {}
-        }
-        self.narrative_patterns = {}
-        self.descriptive_patterns = {}
-        self.dialogue_patterns = {}
-        
-        # Initialize OpenAI client with API key from environment
+        # Initialize OpenAI client
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
         self.client = OpenAI(api_key=api_key)
         
-        # Ensure output directory exists
+        # Setup directories
+        self.source_dir = source_dir
+        self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         
-    def scan_source_materials(self):
-        """Scan all source materials and extract writing patterns"""
-        print(f"Scanning source materials in {self.source_dir}...")
+        # Initialize pattern storage
+        self.dialogue_patterns = []
+        self.narrative_patterns = []
+        self.descriptive_patterns = []
+        self.plot_patterns = []
         
-        chapter_files = sorted(glob.glob(f"{self.source_dir}/Vendetta_Protocol_Chapter_*.md"))
-        dossier_files = glob.glob(f"{self.source_dir}/*dossier*.md")
+        # Load prompt templates
+        self.prompts = self._load_prompts()
         
-        for file_path in chapter_files + dossier_files:
+    def _load_prompts(self) -> Dict[str, Any]:
+        """Load prompt templates from JSON files"""
+        prompts = {}
+        prompt_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'prompts')
+        
+        for prompt_file in glob.glob(f"{prompt_dir}/*.json"):
+            prompt_type = os.path.splitext(os.path.basename(prompt_file))[0]
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                prompts[prompt_type] = json.load(f)
+                
+        return prompts
+    
+    def process_files(self) -> None:
+        """Process all files in the source directory"""
+        print(f"Processing files in {self.source_dir}...")
+        
+        # Get all markdown files
+        markdown_files = glob.glob(f"{self.source_dir}/*.md")
+        for file_path in sorted(markdown_files):
             print(f"Processing {os.path.basename(file_path)}...")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                self.extract_patterns(content)
             self._process_file(file_path)
             
         print("Scanning complete!")
         
-    def _process_file(self, file_path):
-        """Process individual file to extract style elements
+    def _process_dossier(self, file_path):
+        """Process the story dossier to extract story structure and character information
         
         Args:
-            file_path (str): Path to the file to process
+            file_path (str): Path to the dossier file
         """
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
             
-        filename = os.path.basename(file_path)
+        # Extract themes
+        theme_match = re.search(r'themes:.*?\n((?:- [^\n]+\n)+)', content, re.DOTALL)
+        if theme_match:
+            self.themes = [t.strip('- ').strip() for t in theme_match.group(1).split('\n') if t.strip()]
+            
+        # Extract stakes and conflict
+        stakes_match = re.search(r'stakes_and_conflict:.*?\n((?:[^\n]+\n)+?)(?:\n|$)', content, re.DOTALL)
+        if stakes_match:
+            self.stakes = [s.strip() for s in stakes_match.group(1).split('.') if s.strip()]
+            
+        # Extract character information
+        char_sections = re.finditer(r'character_name:\s*([^\n]+).*?(?=character_name:|$)', content, re.DOTALL)
+        for char in char_sections:
+            char_block = char.group(0)
+            name = re.search(r'character_name:\s*([^\n]+)', char_block).group(1).strip().lower()
+            role = re.search(r'role(?:_in_prequel)?:\s*([^\n]+)', char_block)
+            role = role.group(1) if role else ""
+            
+            self.characters[name] = {
+                'role': role,
+                'voice_samples': [],
+                'dialogue_samples': []
+            }
+            
+        # Extract relationships and dynamics
+        for char1 in self.characters:
+            for char2 in self.characters:
+                if char1 != char2:
+                    key = f"{char1}_{char2}"
+                    self.character_relationships[key] = []
+                    
+    def _process_summary(self, file_path):
+        """Process the story summary to extract additional context
         
-        # Extract character dialogue and perspectives based on chapter focus
-        if "Chapter_1" in filename or "Chapter_2" in filename or "Chapter_5" in filename:
-            # These chapters focus on Sienna Voss
-            self._extract_character_voice(content, "sienna_voss")
-            self._extract_descriptive_patterns(content, "technical")
+        Args:
+            file_path (str): Path to the summary file
+        """
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
             
-        if "Chapter_3" in filename:
-            # This chapter focuses on Carmine Rossi
-            self._extract_character_voice(content, "carmine_rossi")
-            self._extract_descriptive_patterns(content, "emotional")
-            
-        if "Chapter_4" in filename:
-            # This chapter focuses on Rocco Marconi
-            self._extract_character_voice(content, "rocco_marconi")
-            self._extract_descriptive_patterns(content, "physical")
-            
-        # Extract dialogue patterns from all chapters
-        self._extract_dialogue_patterns(content)
+        # Extract high-level plot points and story structure
+        # This will help with plot development examples
+        plot_points = re.findall(r'^-\s*(.+)$', content, re.MULTILINE)
+        for point in plot_points:
+            if len(point) > 50:  # Substantial plot point
+                self.plot_patterns[len(self.plot_patterns)] = {
+                    'content': point,
+                    'type': 'major_plot_point'
+                }
+                    
+    def extract_patterns(self, content: str) -> None:
+        """Extract writing patterns from content"""
+        # Extract dialogue
+        dialogue_matches = re.finditer(r'["\']([^"\']+)[\'"][\s,.]+((?:[^."\']+)?(?:said|asked|replied|murmured|whispered|called))', content)
+        for match in dialogue_matches:
+            self.dialogue_patterns.append({
+                'dialogue': match.group(1).strip(),
+                'speaker': match.group(2).strip() if match.group(2) else 'character'
+            })
         
-        # Extract narrative style from all files
-        self._extract_narrative_patterns(content)
+        # Extract narrative passages (paragraphs with action or plot development)
+        narrative_indicators = ['suddenly', 'then', 'finally', 'but', 'however', 'despite', 'realized']
+        paragraphs = content.split('\n\n')
+        for para in paragraphs:
+            if len(para.strip()) > 100:  # Substantial paragraph
+                if any(indicator in para.lower() for indicator in narrative_indicators):
+                    self.narrative_patterns.append(para.strip())
+        
+        # Extract descriptive passages (rich in sensory details)
+        descriptive_indicators = ['looked', 'felt', 'smelled', 'sounded', 'tasted', 'appeared', 'seemed']
+        for para in paragraphs:
+            if len(para.strip()) > 100:
+                if any(indicator in para.lower() for indicator in descriptive_indicators):
+                    self.descriptive_patterns.append(para.strip())
+        
+        # Extract plot developments
+        plot_indicators = ['decided', 'discovered', 'revealed', 'changed', 'learned', 'understood']
+        for para in paragraphs:
+            if len(para.strip()) > 100:
+                if any(indicator in para.lower() for indicator in plot_indicators):
+                    self.plot_patterns.append(para.strip())
         
     def _extract_character_voice(self, content, character_name):
         """Extract character voice patterns from content
@@ -161,11 +230,29 @@ class FineTuneDatasetBuilder:
         Args:
             content (str): The file content
         """
-        # Look for dialogue patterns with quotes
-        dialogue_matches = re.findall(r'"([^"]+)"[^"]+?"([^"]+)"', content)
+        # Look for any quoted speech with speaker attribution
+        dialogue_matches = re.findall(r'["\']([^"\']+)[\'"]\s*(?:,\s*|\.?\s+)([^\.]+?)(?:said|murmured|whispered|spoke|called|replied|asked|answered)', content)
         
+        # Also look for dialogue exchanges
+        dialogue_exchanges = re.findall(r'["\']([^"\']+)[\'"]\s*(?:[^"\']{1,100})\s*["\']([^"\']+)[\'"]', content)
+        
+        # Process single dialogue lines
         for i, match in enumerate(dialogue_matches):
-            if len(match) >= 2:  # Ensure we have a dialogue exchange
+            if len(match) >= 2:  # We have the quote and the speaker attribution
+                self.dialogue_patterns[len(self.dialogue_patterns)] = {
+                    "speaker": match[1].strip(),
+                    "dialogue": match[0].strip()
+                }
+                
+                # Add to character voice samples if it's a known character
+                speaker_lower = match[1].strip().lower()
+                for char_name in self.characters:
+                    if char_name in speaker_lower:
+                        self.characters[char_name]['dialogue_samples'].append(match[0].strip())
+            
+        # Process dialogue exchanges
+        for i, match in enumerate(dialogue_exchanges):
+            if len(match) >= 2:
                 self.dialogue_patterns[len(self.dialogue_patterns)] = {
                     "speaker1": match[0],
                     "speaker2": match[1]
@@ -184,150 +271,124 @@ class FineTuneDatasetBuilder:
             if para.count('"') < 4 and len(para) > 200:
                 self.narrative_patterns[len(self.narrative_patterns)] = para
     
-    def _create_character_voice_examples(self) -> List[Dict]:
-        """Create training examples for character voice
-        
-        Returns:
-            List[Dict]: List of formatted training examples
-        """
+    def create_examples(self) -> List[Dict[str, Any]]:
+        """Create training examples from extracted patterns"""
         examples = []
         
-        # Character voice examples for each character
-        for character, paragraphs in self.character_voices.items():
-            if not paragraphs:
-                continue
-                
-            display_name = character.replace("_", " ").title()
-            
-            # Characteristics by character
-            characteristics = {
-                "sienna_voss": "technical brilliance, idealism, determination, analytical thinking",
-                "rocco_marconi": "ruthless authority, strategic thinking, cold calculation, traditional power",
-                "carmine_rossi": "nervous energy, detail-oriented, fear of failure, procedural thinking"
-            }
-            
-            # Scenarios by character
-            scenarios = {
-                "sienna_voss": [
-                    "observing ArgusNet's operations",
-                    "planning a digital attack",
-                    "analyzing data from a breach",
-                    "reflecting on the criminal underworld",
-                    "working with complex technology"
-                ],
-                "rocco_marconi": [
-                    "confronting a subordinate",
-                    "planning to identify a threat",
-                    "reflecting on the family's operations",
-                    "dealing with a breach in security",
-                    "considering the future of the organization"
-                ],
-                "carmine_rossi": [
-                    "discovering financial irregularities",
-                    "reporting problems to superiors",
-                    "trying to understand the AI threat",
-                    "feeling pressure from above",
-                    "analyzing business operations"
+        # Create dialogue examples
+        for pattern in self.dialogue_patterns:
+            example = {
+                "messages": [
+                    {"role": "system", "content": self.prompts["dialogue"]["system"]},
+                    {"role": "user", "content": self.prompts["dialogue"]["user"]},
+                    {"role": "assistant", "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said."}
                 ]
             }
-            
-            # Create examples for this character
-            for i, (_, paragraph) in enumerate(paragraphs.items()):
-                if i >= 5:  # Limit number of examples per character
-                    break
-                    
-                scenario = random.choice(scenarios[character])
-                
-                example = {
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": f"You are a creative writing assistant specializing in character voice development for the Vendetta Protocol series. Maintain the specific voice of {display_name} characterized by {characteristics[character]}."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"Write a paragraph from {display_name}'s perspective about {scenario}."
-                        },
-                        {
-                            "role": "assistant",
-                            "content": paragraph
-                        }
-                    ]
-                }
-                examples.append(example)
-                
+            examples.append(example)
+        
+        # Create narrative examples
+        for pattern in self.narrative_patterns:
+            example = {
+                "messages": [
+                    {"role": "system", "content": self.prompts["narrative"]["system"]},
+                    {"role": "user", "content": "Write a narrative paragraph that builds tension and advances the plot."},
+                    {"role": "assistant", "content": pattern}
+                ]
+            }
+            examples.append(example)
+        
+        # Create descriptive examples
+        for pattern in self.descriptive_patterns:
+            example = {
+                "messages": [
+                    {"role": "system", "content": self.prompts["descriptive_prose"]["system"]},
+                    {"role": "user", "content": "Write a descriptive paragraph that creates a vivid scene."},
+                    {"role": "assistant", "content": pattern}
+                ]
+            }
+            examples.append(example)
+        
         return examples
     
-    def _create_descriptive_examples(self) -> List[Dict]:
-        """Create training examples for descriptive writing
+    def generate_datasets(self) -> tuple[str, str]:
+        """Generate training and validation datasets
         
         Returns:
-            List[Dict]: List of formatted training examples
+            tuple[str, str]: Paths to training and validation files
         """
-        examples = []
+        examples = self.create_examples()
+        random.shuffle(examples)
         
-        for desc_type, paragraphs in self.descriptive_patterns.items():
-            if not paragraphs:
-                continue
+        # Split into training (80%) and validation (20%) sets
+        split_point = int(len(examples) * 0.8)
+        training_examples = examples[:split_point]
+        validation_examples = examples[split_point:]
+        
+        # Save datasets
+        training_path = os.path.join(self.output_dir, 'training_finetune_dataset.jsonl')
+        validation_path = os.path.join(self.output_dir, 'validation_finetune_dataset.jsonl')
+        
+        with open(training_path, 'w', encoding='utf-8') as f:
+            for example in training_examples:
+                f.write(json.dumps(example) + '\n')
                 
-            # Elements to describe by type
-            elements = {
-                "technical": [
-                    "an advanced AI system breaching security",
-                    "a digital attack on financial networks",
-                    "a secure hacker workspace",
-                    "the processing of stolen data",
-                    "a cybersecurity defense system"
-                ],
-                "emotional": [
-                    "the tension during a financial crisis",
-                    "the fear of an unknown threat",
-                    "the anxiety of losing control",
-                    "the paranoia within a criminal organization",
-                    "the growing frustration of a trapped operative"
-                ],
-                "physical": [
-                    "a crime boss's private office",
-                    "a clandestine meeting between criminals",
-                    "a high-tech urban apartment",
-                    "the physical manifestation of digital power",
-                    "a confrontation between rivals"
-                ]
-            }
-            
-            style_focus = {
-                "technical": "technical precision and futuristic terminology",
-                "emotional": "psychological depth and emotional intensity",
-                "physical": "sensory details and atmospheric elements"
-            }
-            
-            # Create examples for this description type
-            for i, (_, paragraph) in enumerate(paragraphs.items()):
-                if i >= 5:  # Limit number of examples per type
-                    break
-                    
-                element = random.choice(elements[desc_type])
-                
-                example = {
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": f"You are a creative writing assistant specializing in descriptive prose for the Vendetta Protocol series. Focus on {desc_type} descriptions with emphasis on {style_focus[desc_type]}."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"Describe {element} in the style of Vendetta Protocol."
-                        },
-                        {
-                            "role": "assistant",
-                            "content": paragraph
-                        }
-                    ]
-                }
-                examples.append(example)
-                
-        return examples
+        with open(validation_path, 'w', encoding='utf-8') as f:
+            for example in validation_examples:
+                f.write(json.dumps(example) + '\n')
+        
+        print(f"\nDataset generation complete!")
+        print(f"Training examples: {len(training_examples)}")
+        print(f"Validation examples: {len(validation_examples)}")
+        print(f"\nFiles saved to:")
+        print(f"Training: {training_path}")
+        print(f"Validation: {validation_path}")
+        
+        return training_path, validation_path
     
+    def _extract_plot_patterns(self, content):
+        """Extract plot development patterns from content
+        
+        Args:
+            content (str): The file content
+        """
+        # Plot development keywords from the dossier and common narrative elements
+        plot_keywords = [
+            'motivation', 'conflict', 'plan', 'mission', 'goal', 'discover', 
+            'reveal', 'change', 'decision', 'consequence', 'react', 'impact',
+            'begin', 'end', 'finally', 'suddenly', 'realize'
+        ] + self.themes + [s.split()[0].lower() for s in self.stakes if s]
+        
+        # Look for paragraphs with plot development
+        paragraphs = re.split(r'\n\n+', content)
+        for para in paragraphs:
+            if len(para) > 100:  # Substantial paragraph
+                # Check for plot keywords
+                matches = [k for k in plot_keywords if k.lower() in para.lower()]
+                if matches:
+                    # Check if paragraph advances the plot
+                    signals = ['but', 'however', 'suddenly', 'realized', 'decided',
+                             'changed', 'discovered', 'revealed', 'finally']
+                    has_plot_signal = any(s in para.lower() for s in signals)
+                    
+                    if has_plot_signal or len(matches) >= 2:
+                        self.plot_patterns[len(self.plot_patterns)] = {
+                            'content': para,
+                            'keywords': matches,
+                            'type': 'plot_development'
+                        }
+                        
+                # Look for character development
+                for char_name in self.characters:
+                    if char_name in para.lower():
+                        char_signals = ['felt', 'thought', 'decided', 'realized',
+                                      'changed', 'learned', 'understood']
+                        if any(s in para.lower() for s in char_signals):
+                            self.plot_patterns[len(self.plot_patterns)] = {
+                                'content': para,
+                                'character': char_name,
+                                'type': 'character_development'
+                            }
+
     def _create_dialogue_examples(self) -> List[Dict]:
         """Create training examples for dialogue
         
@@ -336,18 +397,74 @@ class FineTuneDatasetBuilder:
         """
         examples = []
         
-        # Character pairs for dialogue
+        # Character roles and relationships
         character_pairs = [
-            ("Sienna Voss", "ArgusNet AI Interface"),
-            ("Rocco Marconi", "Carmine Rossi"),
-            ("Rocco Marconi", "Enzo Bellini"),
-            ("Carmine Rossi", "Leo"),
-            ("Sienna Voss", "Rocco Marconi")
+            ("mentor", "student"),
+            ("rival", "competitor"),
+            ("authority", "subordinate"),
+            ("protagonist", "adversary"),
+            ("ally", "confidant")
         ]
         
-        # Topics by character pair
-        topics = {
-            ("Sienna Voss", "ArgusNet AI Interface"): [
+        # Topics for dialogue
+        topics = [
+            "discovered threat",
+            "crucial information",
+            "strategic planning",
+            "loyalty question",
+            "hidden truth",
+            "negotiation",
+            "confrontation",
+            "revelation"
+        ]
+        
+        # Create examples for each dialogue pattern
+        for pattern in self.dialogue_patterns.values():
+            if "speaker" in pattern and "dialogue" in pattern:
+                # Single line dialogue
+                for char_pair in character_pairs:
+                    topic = random.choice(topics)
+                    example = {
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
+                            },
+                            {
+                                "role": "user",
+                                "content": f"Write a brief dialogue about {topic} between two characters: {char_pair[0]} and {char_pair[1]}."
+                            },
+                            {
+                                "role": "assistant",
+                                "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said."
+                            }
+                        ]
+                    }
+                    examples.append(example)
+            
+            # For multi-line dialogues
+            elif "dialogue1" in pattern and "dialogue2" in pattern:
+                for char_pair in character_pairs:
+                    topic = random.choice(topics)
+                    example = {
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
+                            },
+                            {
+                                "role": "user",
+                                "content": f"Write a dialogue exchange about {topic} between {char_pair[0]} and {char_pair[1]}."
+                            },
+                            {
+                                "role": "assistant",
+                                "content": f"\"{pattern['dialogue1']}\" {char_pair[0]} said.\n\n\"{pattern['dialogue2']}\" {char_pair[1]} replied."
+                            }
+                        ]
+                    }
+                    examples.append(example)
+                    
+        return examples
                 "the progress of a digital infiltration",
                 "security vulnerabilities in the target system",
                 "ethical implications of their actions",
@@ -530,144 +647,29 @@ class FineTuneDatasetBuilder:
         
         return training_path, validation_path
     
-    @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
-    def upload_file(self, file_path, purpose="fine-tune"):
-        """Upload file to OpenAI with retries
-        
-        Args:
-            file_path (str): Path to the file to upload
-            purpose (str): Purpose of the file
-            
-        Returns:
-            str: ID of the uploaded file
-        """
-        print(f"Uploading {file_path} to OpenAI...")
-        with open(file_path, "rb") as file:
-            response = self.client.files.create(file=file, purpose=purpose)
-        print(f"File uploaded with ID: {response.id}")
-        return response.id
-    
-    def submit_fine_tuning_job(self, training_file_id, validation_file_id, model="gpt-3.5-turbo", suffix=None):
-        """Submit fine-tuning job to OpenAI
-        
-        Args:
-            training_file_id (str): ID of the training file
-            validation_file_id (str): ID of the validation file
-            model (str): Base model to fine-tune
-            suffix (str): Suffix for the fine-tuned model name
-            
-        Returns:
-            str: ID of the fine-tuning job
-        """
-        print(f"Submitting fine-tuning job for model {model}...")
-        job = self.client.fine_tuning.jobs.create(
-            training_file=training_file_id,
-            validation_file=validation_file_id,
-            model=model,
-            suffix=suffix
-        )
-        print(f"Fine-tuning job submitted with ID: {job.id}")
-        return job.id
-    
-    def evaluate_model(self, fine_tuned_model, test_prompts, base_model="gpt-3.5-turbo"):
-        """Compare fine-tuned model against base model
-        
-        Args:
-            fine_tuned_model (str): ID of the fine-tuned model
-            test_prompts (List[Dict]): List of test prompts
-            base_model (str): Base model to compare against
-            
-        Returns:
-            Dict: Evaluation results
-        """
-        results = {
-            "fine_tuned": [],
-            "base": []
-        }
-        
-        print(f"Evaluating fine-tuned model {fine_tuned_model} against {base_model}...")
-        
-        for i, prompt in enumerate(test_prompts):
-            print(f"Testing prompt {i+1}/{len(test_prompts)}...")
-            
-            # Get response from fine-tuned model
-            ft_response = self.client.chat.completions.create(
-                model=fine_tuned_model,
-                messages=[
-                    {"role": "system", "content": prompt["system"]},
-                    {"role": "user", "content": prompt["user"]}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            # Get response from base model
-            base_response = self.client.chat.completions.create(
-                model=base_model,
-                messages=[
-                    {"role": "system", "content": prompt["system"]},
-                    {"role": "user", "content": prompt["user"]}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            results["fine_tuned"].append({
-                "prompt": prompt,
-                "response": ft_response.choices[0].message.content
-            })
-            
-            results["base"].append({
-                "prompt": prompt,
-                "response": base_response.choices[0].message.content
-            })
-        
-        # Save results to file
-        results_path = os.path.join(self.output_dir, "evaluation_results.json")
-        with open(results_path, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2)
-            
-        print(f"Evaluation results saved to: {results_path}")
-        return results
+
 
 
 def main():
-    """Main function to run the dataset builder"""
+    """Main entry point"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="Build fine-tuning dataset from Vendetta Protocol source materials")
-    parser.add_argument("--source_dir", default="../original documents", help="Directory containing source materials")
-    parser.add_argument("--output_dir", default="../datasets", help="Directory to save output files")
-    parser.add_argument("--scan_only", action="store_true", help="Only scan source materials, don't generate dataset")
-    parser.add_argument("--upload", action="store_true", help="Upload dataset to OpenAI after generation")
-    parser.add_argument("--submit", action="store_true", help="Submit fine-tuning job after upload")
-    parser.add_argument("--suffix", default=None, help="Suffix for the fine-tuned model name")
-    parser.add_argument("--model", default="gpt-3.5-turbo", help="Base model to fine-tune")
+    parser = argparse.ArgumentParser(description="Build fine-tuning dataset from writing samples")
+    parser.add_argument("--source_dir", default="original documents",
+                       help="Directory containing source materials")
+    parser.add_argument("--output_dir", default="datasets",
+                       help="Directory to save output files")
     
     args = parser.parse_args()
     
-    builder = FineTuneDatasetBuilder(args.source_dir, args.output_dir)
-    builder.scan_source_materials()
+    # Convert relative paths to absolute
+    source_dir = os.path.abspath(args.source_dir)
+    output_dir = os.path.abspath(args.output_dir)
     
-    if args.scan_only:
-        print("Scan complete. Exiting without generating dataset.")
-        return
-    
-    training_path, validation_path = builder.generate_jsonl_dataset()
-    
-    if args.upload:
-        training_file_id = builder.upload_file(training_path)
-        validation_file_id = builder.upload_file(validation_path)
-        
-        if args.submit:
-            job_id = builder.submit_fine_tuning_job(
-                training_file_id, 
-                validation_file_id,
-                model=args.model,
-                suffix=args.suffix
-            )
-            print(f"Fine-tuning job submitted with ID: {job_id}")
-
+    # Create and run builder
+    builder = DatasetBuilder(source_dir, output_dir)
+    builder.process_files()
+    builder.generate_datasets()
 
 if __name__ == "__main__":
     main()

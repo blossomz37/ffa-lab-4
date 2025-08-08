@@ -1,4 +1,4 @@
-# Next Steps for Vendetta Protocol Finetuning Project
+# Next Steps for Writing Style Fine-tuning Project
 
 ## Your Tasks:
 
@@ -10,90 +10,79 @@
    - Make sure all scripts are executable
 
 2. **Configure API access**
-   - Set up your OpenAI API key using the API key manager:
-     ```bash
-     python tools/api_key_manager.py set YOUR_API_KEY
+   - Create a .env file in the project root
+   - Add your OpenAI API key:
      ```
-   - Verify API access is working
+     OPENAI_API_KEY=your-api-key-here
+     ```
+   - Test API access by running the dataset preparation script
 
 3. **Review source material**
    - Ensure all necessary source materials are in the `/original documents` folder
    - Consider adding any additional writing samples if available (character sheets, dialogue examples, etc.)
 
-4. **Prepare and validate dataset**
+4. **Prepare training data**
    - Run the dataset preparation script:
      ```bash
      python scripts/prepare_dataset.py
      ```
-   - Validate the generated dataset:
-     ```bash
-     python scripts/validate_dataset.py datasets/training_finetune_dataset.jsonl --summary
+   - Review the generated datasets in the `datasets` directory:
+     - `training_finetune_dataset.jsonl`
+     - `validation_finetune_dataset.jsonl`
+   - Check the console output for pattern extraction statistics
+
+5. **Review examples by category**
+   - Examine dialogue patterns and speaker attribution
+   - Check narrative passages for plot development
+   - Verify descriptive writing samples
+   - Ensure balance across categories
+
+6. **Review JSON format**
+   - Check that each example follows the format:
+     ```json
+     {
+       "messages": [
+         {"role": "system", "content": "..."},
+         {"role": "user", "content": "..."},
+         {"role": "assistant", "content": "..."}
+       ]
+     }
      ```
-   - Review the dataset summary to ensure proper distribution of examples
+   - Verify proper JSON formatting and escape characters
 
-5. **Submit for fine-tuning**
-   - Upload the training dataset:
-     ```bash
-     python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
-     ```
-   - Upload the validation dataset:
-     ```bash
-     python scripts/finetune_submit.py upload datasets/validation_finetune_dataset.jsonl
-     ```
-   - Submit the fine-tuning job (using the file IDs from the uploads):
-     ```bash
-     python scripts/finetune_submit.py submit --training-file file-abc123 --validation-file file-def456 --model gpt-3.5-turbo --suffix vendetta-protocol
-     ```
+7. **Organize new writing samples**
+   - Add new source materials to `original documents` as needed
+   - Rerun dataset preparation with new samples
+   - Compare datasets for improved coverage
 
-6. **Monitor fine-tuning progress**
-   - Check the status of your fine-tuning job:
-     ```bash
-     python scripts/finetune_submit.py monitor YOUR_JOB_ID
-     ```
-   - Save job details once complete:
-     ```bash
-     python scripts/finetune_submit.py save-job YOUR_JOB_ID --output output/job_details.json
-     ```
+## Next Steps:
 
-7. **Test the fine-tuned model**
-   - Use the interactive generation tool to test your model:
-     ```bash
-     python scripts/generate.py interactive --model YOUR_FINE_TUNED_MODEL_ID
-     ```
-   - Try different template types to evaluate model performance across categories
+1. **Add writing prompts**
+   - Create prompt templates for each category:
+     - Dialogue prompts
+     - Narrative prompts
+     - Descriptive prompts
+   - Save prompts as JSON files in the `prompts` directory
 
-## My Tasks:
+2. **Improve pattern extraction**
+   - Add more pattern recognition for:
+     - Complex dialogue exchanges
+     - Scene transitions
+     - Character development moments
+   - Refine pattern matching expressions
 
-1. **Available for code refinements**
-   - I'll be available to help refine the scripts if you encounter any issues
-   - Can assist with debugging data extraction or processing problems
+3. **Documentation**
+   - Document extracted pattern types
+   - Note any limitations or specific requirements
+   - Add examples of successful patterns
 
-2. **Assist with dataset analysis**
-   - Help you interpret the dataset validation results
-   - Suggest adjustments to improve category balance if needed
+## Timeline:
 
-3. **Provide template guidance**
-   - Help create additional prompt templates as needed
-   - Suggest specific test scenarios based on your writing style
+1. **Initial setup**: 10-15 minutes
+2. **Dataset preparation**: 30-60 minutes depending on source material
+3. **Review and refinement**: 30 minutes
 
-4. **Support troubleshooting**
-   - Help diagnose and resolve any API errors
-   - Assist with interpreting fine-tuning metrics and results
-
-5. **Evaluation assistance**
-   - Help develop evaluation strategies for the fine-tuned model
-   - Suggest comparison methodologies between base and fine-tuned models
-
-6. **Documentation updates**
-   - Provide any additional documentation needed
-   - Help document model capabilities and limitations
-
-## Timeline Considerations:
-
-1. **Dataset preparation**: 1-2 hours depending on source material size
-2. **Fine-tuning job**: 2-12 hours (depends on OpenAI queue and dataset size)
-3. **Testing and refinement**: 1-2 hours
-
-Remember that fine-tuning is often an iterative process. The first model may need further refinement based on testing results, potentially leading to additional fine-tuning runs with adjusted datasets.
-
-Would you like me to elaborate on any specific step in this process?
+Tips:
+- Start with a small set of high-quality writing samples
+- Review extracted patterns before generating the full dataset
+- Add more samples incrementally to improve coverage

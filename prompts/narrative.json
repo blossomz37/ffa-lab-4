@@ -1,13 +1,34 @@
 {
-  "system": "You are a creative writing assistant specializing in narrative prose for the Vendetta Protocol series. Focus on gritty, high-stakes narrative that blends cyber-thriller elements with organized crime drama.",
-  "user": "Write a narrative paragraph {scenario} in the style of Vendetta Protocol.",
+  "system": "You are a creative writing assistant specializing in compelling narrative prose for thriller and suspense fiction. Focus on creating tension, pacing, and atmospheric storytelling that draws readers into the story world.",
+  "user": "Write a narrative paragraph for {scenario}, paying attention to pacing, tension, and narrative flow.",
   "parameters": {
     "scenario": [
-      "introducing a new technological threat",
-      "revealing a character's hidden motivations",
-      "describing the escalation of conflict",
-      "exploring the consequences of a digital breach",
-      "setting up a confrontation between adversaries"
+      "introducing a critical threat",
+      "revealing character motivations",
+      "escalating conflict",
+      "exploring consequences",
+      "building tension",
+      "setting up confrontation",
+      "unveiling discoveries",
+      "shifting power dynamics",
+      "internal struggle",
+      "external pressure"
+    ],
+    "tone": [
+      "suspenseful",
+      "introspective",
+      "urgent",
+      "analytical",
+      "emotional",
+      "atmospheric"
+    ],
+    "narrative_focus": [
+      "character development",
+      "plot advancement",
+      "world building",
+      "relationship dynamics",
+      "thematic exploration",
+      "conflict escalation"
     ]
   }
 }

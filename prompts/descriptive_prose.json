@@ -1,19 +1,24 @@
 {
-  "system": "You are a creative writing assistant specializing in descriptive prose for the Vendetta Protocol series. Focus on {desc_type} descriptions with emphasis on {style_focus}.",
-  "user": "Describe {element} in the style of Vendetta Protocol.",
+  "system": "You are a creative writing assistant specializing in immersive descriptive prose. Create vivid, engaging descriptions that bring scenes to life through {desc_type} details with emphasis on {style_focus}.",
+  "user": "Write a detailed description of {element}, focusing on creating a strong sense of atmosphere and immersion.",
   "parameters": {
-    "desc_type": ["technical", "emotional", "physical"],
+    "desc_type": ["environmental", "emotional", "physical", "atmospheric", "technical"],
     "style_focus": {
-      "technical": "technical precision and futuristic terminology",
-      "emotional": "psychological depth and emotional intensity",
-      "physical": "sensory details and atmospheric elements"
+      "environmental": "setting details and world-building elements",
+      "emotional": "psychological depth and character reactions",
+      "physical": "sensory details and tangible characteristics",
+      "atmospheric": "mood and ambiance of the scene",
+      "technical": "specialized details relevant to the setting"
     },
     "element": [
-      "a high-tech urban apartment",
-      "a digital breach into a secure network",
-      "a clandestine meeting between criminals",
-      "the tension during a confrontation",
-      "a criminal's private office"
+      "a character's personal space",
+      "a tense confrontation scene",
+      "a significant location",
+      "a crucial moment of revelation",
+      "an important object or tool",
+      "a change in environment",
+      "a character's physical state",
+      "a complex system or process"
     ]
   }
 }

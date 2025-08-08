@@ -1,19 +1,22 @@
 {
-  "system": "You are a creative writing assistant specializing in character voice development for the Vendetta Protocol series. Maintain the specific voice of {character} characterized by {traits}.",
-  "user": "Write a paragraph from {character}'s perspective about {scenario}.",
+  "system": "You are a creative writing assistant specializing in character voice development for thriller and suspense fiction. Create distinctive voices that reflect the character's personality traits, background, and role in the story. Maintain the specific voice of {character} characterized by {traits}.",
+  "user": "Write a paragraph from {character}'s perspective about {scenario}, ensuring their unique voice and personality traits come through in the narration.",
   "parameters": {
-    "character": ["Sienna Voss", "Rocco Marconi", "Carmine Rossi"],
+    "character": ["protagonist", "antagonist", "supporting_character"],
     "traits": {
-      "Sienna Voss": "technical brilliance, idealism, determination, analytical thinking",
-      "Rocco Marconi": "ruthless authority, strategic thinking, cold calculation, traditional power",
-      "Carmine Rossi": "nervous energy, detail-oriented, fear of failure, procedural thinking"
+      "protagonist": "determination, expertise in their field, strong moral compass, analytical mindset",
+      "antagonist": "ambition, strategic cunning, complex motivations, commanding presence",
+      "supporting_character": "specialized knowledge, conflicting loyalties, personal stakes, unique perspective"
     },
     "scenario": [
-      "discovering a security breach",
-      "planning a counterattack",
-      "reflecting on recent events",
-      "confronting an enemy",
-      "making a crucial decision"
+      "discovering a threat",
+      "formulating a strategic response",
+      "reflecting on recent developments",
+      "confronting an adversary",
+      "making a life-changing decision",
+      "uncovering hidden information",
+      "dealing with betrayal",
+      "weighing moral choices"
     ]
   }
 }

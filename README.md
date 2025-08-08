@@ -1,14 +1,14 @@
-# Vendetta Protocol Fine-tuning Project
+# Writing Style Fine-tuning Project
 
-This repository contains tools for fine-tuning language models on the Vendetta Protocol series writing style. The project aims to create specialized models that can generate content matching the author's unique style, character voices, and narrative techniques.
+This repository contains tools for fine-tuning language models on your writing style. The project helps create specialized models that can generate content matching your preferred writing patterns for dialogue, narrative, and descriptive prose.
 
 ## Project Structure
 
-- `original documents/`: Source material from the Vendetta Protocol series
+- `original documents/`: Your source writing samples
 - `datasets/`: Contains fine-tuning datasets in JSONL format
-- `scripts/`: Python scripts for dataset preparation and fine-tuning
-- `prompts/`: Creative writing templates for content generation
-- `output/`: Generated content and story drafts
+- `scripts/`: Python scripts for dataset preparation
+- `prompts/`: Creative writing templates and prompts
+- `output/`: Generated content
 - `tools/`: Utility tools for working with the OpenAI API
 
 ## Getting Started
@@ -16,32 +16,31 @@ This repository contains tools for fine-tuning language models on the Vendetta P
 ### Prerequisites
 
 - Python 3.9+
-- OpenAI API key set as an environment variable (`OPENAI_API_KEY`)
+- OpenAI API key set in .env file (`OPENAI_API_KEY`)
 
 ### Installation
 
 1. Clone this repository
 2. Install dependencies:
    ```
-   pip install openai tenacity
+   pip install openai python-dotenv
+   ```
+3. Create a .env file with your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your-api-key-here
    ```
 
 ### Dataset Preparation
 
-The project extracts patterns from your writing style and creates fine-tuning datasets:
+The project extracts writing patterns from your samples and creates fine-tuning datasets:
 
 ```bash
 python scripts/prepare_dataset.py
 ```
 
 Options:
-- `--source_dir`: Directory containing source materials (default: "../original documents")
-- `--output_dir`: Directory to save output files (default: "../datasets")
-- `--scan_only`: Only scan source materials, don't generate dataset
-- `--upload`: Upload dataset to OpenAI after generation
-- `--submit`: Submit fine-tuning job after upload
-- `--suffix`: Suffix for the fine-tuned model name
-- `--model`: Base model to fine-tune (default: "gpt-3.5-turbo")
+- `--source_dir`: Directory containing source materials (default: "original documents")
+- `--output_dir`: Directory to save output files (default: "datasets")
 
 ### Validating Datasets
 
@@ -85,18 +84,24 @@ python scripts/generate.py interactive --model ft:gpt-3.5-turbo:my-org:vendetta-
 python scripts/generate.py generate character_voice --model ft:gpt-3.5-turbo:my-org:vendetta-protocol:abc123
 ```
 
-## Fine-tuning Categories
+## Writing Categories
 
 The training examples are organized into these categories:
 
-1. **Character Voice Development**
-   - For maintaining the distinct voices of key characters (Sienna Voss, Rocco Marconi, Carmine Rossi)
-   - Includes perspective-specific narration
+1. **Dialogue Writing**
+   - Natural conversation patterns
+   - Speaker attribution
+   - Character interactions
 
-2. **Descriptive Prose**
-   - Technical descriptions (AI systems, digital environments)
-   - Emotional descriptions (character feelings, tension)
-   - Physical descriptions (settings, people, actions)
+2. **Narrative Writing**
+   - Plot development
+   - Action sequences
+   - Scene transitions
+
+3. **Descriptive Writing**
+   - Sensory details
+   - Setting descriptions
+   - Character observations
 
 3. **Dialogue**
    - Character-specific speech patterns

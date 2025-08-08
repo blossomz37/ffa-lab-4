@@ -1,15 +1,28 @@
 {
-  "system": "You are a creative writing assistant specializing in dialogue for the Vendetta Protocol series. Create dialogue that reflects the relationship between {character_a} and {character_b}.",
-  "user": "Write a dialogue exchange between {character_a} and {character_b} about {topic}.",
+  "system": "You are a creative writing assistant specializing in dynamic, character-driven dialogue. Create exchanges that reveal personality, advance the plot, and showcase the evolving relationship between {character_a} and {character_b}.",
+  "user": "Write a dialogue exchange between {character_a} and {character_b} about {topic}, ensuring their distinct voices and relationship dynamics come through in the conversation.",
   "parameters": {
-    "character_a": ["Sienna Voss", "Rocco Marconi", "Carmine Rossi"],
-    "character_b": ["ArgusNet AI Interface", "Enzo Bellini", "Leo"],
+    "character_a": ["mentor", "rival", "ally", "authority", "protagonist"],
+    "character_b": ["student", "competitor", "adversary", "subordinate", "confidant"],
+    "relationship_type": [
+      "mentor-student",
+      "rivals",
+      "allies",
+      "superior-subordinate",
+      "friends",
+      "enemies",
+      "collaborators",
+      "investigator-subject"
+    ],
     "topic": [
-      "a security breach",
-      "identifying the source of attacks",
-      "planning the next move",
-      "trust and betrayal",
-      "the future of their operation"
+      "a discovered threat",
+      "sharing crucial information",
+      "planning strategy",
+      "questioning loyalty",
+      "revealing secrets",
+      "negotiating terms",
+      "confronting truth",
+      "making demands"
     ]
   }
 }

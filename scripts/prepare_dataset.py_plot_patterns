@@ -1,0 +1,43 @@
+    def _extract_plot_patterns(self, content):
+        """Extract plot development patterns from content
+        
+        Args:
+            content (str): The file content
+        """
+        # Plot development keywords from the dossier and common narrative elements
+        plot_keywords = [
+            'motivation', 'conflict', 'plan', 'mission', 'goal', 'discover', 
+            'reveal', 'change', 'decision', 'consequence', 'react', 'impact',
+            'begin', 'end', 'finally', 'suddenly', 'realize'
+        ] + self.themes + [s.split()[0].lower() for s in self.stakes if s]
+        
+        # Look for paragraphs with plot development
+        paragraphs = re.split(r'\n\n+', content)
+        for para in paragraphs:
+            if len(para) > 100:  # Substantial paragraph
+                # Check for plot keywords
+                matches = [k for k in plot_keywords if k.lower() in para.lower()]
+                if matches:
+                    # Check if paragraph advances the plot
+                    signals = ['but', 'however', 'suddenly', 'realized', 'decided',
+                             'changed', 'discovered', 'revealed', 'finally']
+                    has_plot_signal = any(s in para.lower() for s in signals)
+                    
+                    if has_plot_signal or len(matches) >= 2:
+                        self.plot_patterns[len(self.plot_patterns)] = {
+                            'content': para,
+                            'keywords': matches,
+                            'type': 'plot_development'
+                        }
+                        
+                # Look for character development
+                for char_name in self.characters:
+                    if char_name in para.lower():
+                        char_signals = ['felt', 'thought', 'decided', 'realized',
+                                      'changed', 'learned', 'understood']
+                        if any(s in para.lower() for s in char_signals):
+                            self.plot_patterns[len(self.plot_patterns)] = {
+                                'content': para,
+                                'character': char_name,
+                                'type': 'character_development'
+                            }
