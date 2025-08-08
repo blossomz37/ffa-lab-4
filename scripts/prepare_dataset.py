@@ -69,161 +69,90 @@ class DatasetBuilder:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 self.extract_patterns(content)
-            self._process_file(file_path)
-            
-        print("Scanning complete!")
         
-    def _process_dossier(self, file_path):
-        """Process the story dossier to extract story structure and character information
+        print("\nProcessing complete!")
+        print(f"Found {len(self.dialogue_patterns)} dialogue patterns")
+        print(f"Found {len(self.narrative_patterns)} narrative patterns")
+        print(f"Found {len(self.descriptive_patterns)} descriptive patterns")
+        print(f"Found {len(self.plot_patterns)} plot patterns")
         
-        Args:
-            file_path (str): Path to the dossier file
-        """
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            
-        # Extract themes
-        theme_match = re.search(r'themes:.*?\n((?:- [^\n]+\n)+)', content, re.DOTALL)
-        if theme_match:
-            self.themes = [t.strip('- ').strip() for t in theme_match.group(1).split('\n') if t.strip()]
-            
-        # Extract stakes and conflict
-        stakes_match = re.search(r'stakes_and_conflict:.*?\n((?:[^\n]+\n)+?)(?:\n|$)', content, re.DOTALL)
-        if stakes_match:
-            self.stakes = [s.strip() for s in stakes_match.group(1).split('.') if s.strip()]
-            
-        # Extract character information
-        char_sections = re.finditer(r'character_name:\s*([^\n]+).*?(?=character_name:|$)', content, re.DOTALL)
-        for char in char_sections:
-            char_block = char.group(0)
-            name = re.search(r'character_name:\s*([^\n]+)', char_block).group(1).strip().lower()
-            role = re.search(r'role(?:_in_prequel)?:\s*([^\n]+)', char_block)
-            role = role.group(1) if role else ""
-            
-            self.characters[name] = {
-                'role': role,
-                'voice_samples': [],
-                'dialogue_samples': []
-            }
-            
-        # Extract relationships and dynamics
-        for char1 in self.characters:
-            for char2 in self.characters:
-                if char1 != char2:
-                    key = f"{char1}_{char2}"
-                    self.character_relationships[key] = []
-                    
-    def _process_summary(self, file_path):
-        """Process the story summary to extract additional context
-        
-        Args:
-            file_path (str): Path to the summary file
-        """
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            
-        # Extract high-level plot points and story structure
-        # This will help with plot development examples
-        plot_points = re.findall(r'^-\s*(.+)$', content, re.MULTILINE)
-        for point in plot_points:
-            if len(point) > 50:  # Substantial plot point
-                self.plot_patterns[len(self.plot_patterns)] = {
-                    'content': point,
-                    'type': 'major_plot_point'
-                }
-                    
+
     def extract_patterns(self, content: str) -> None:
         """Extract writing patterns from content"""
-        # Extract dialogue
-        dialogue_matches = re.finditer(r'["\']([^"\']+)[\'"][\s,.]+((?:[^."\']+)?(?:said|asked|replied|murmured|whispered|called))', content)
-        for match in dialogue_matches:
-            self.dialogue_patterns.append({
-                'dialogue': match.group(1).strip(),
-                'speaker': match.group(2).strip() if match.group(2) else 'character'
-            })
-        
-        # Extract narrative passages (paragraphs with action or plot development)
-        narrative_indicators = ['suddenly', 'then', 'finally', 'but', 'however', 'despite', 'realized']
         paragraphs = content.split('\n\n')
-        for para in paragraphs:
-            if len(para.strip()) > 100:  # Substantial paragraph
-                if any(indicator in para.lower() for indicator in narrative_indicators):
-                    self.narrative_patterns.append(para.strip())
         
-        # Extract descriptive passages (rich in sensory details)
-        descriptive_indicators = ['looked', 'felt', 'smelled', 'sounded', 'tasted', 'appeared', 'seemed']
-        for para in paragraphs:
-            if len(para.strip()) > 100:
-                if any(indicator in para.lower() for indicator in descriptive_indicators):
-                    self.descriptive_patterns.append(para.strip())
-        
-        # Extract plot developments
-        plot_indicators = ['decided', 'discovered', 'revealed', 'changed', 'learned', 'understood']
-        for para in paragraphs:
-            if len(para.strip()) > 100:
-                if any(indicator in para.lower() for indicator in plot_indicators):
-                    self.plot_patterns.append(para.strip())
-        
-    def _extract_character_voice(self, content, character_name):
-        """Extract character voice patterns from content
-        
-        Args:
-            content (str): The file content
-            character_name (str): Name of the character to extract voice for
-        """
-        # For Sienna, look for technical descriptions, idealistic perspectives
-        if character_name == "sienna_voss":
-            # Simple pattern matching - can be enhanced with NLP
-            paragraphs = re.split(r'\n\n+', content)
-            for para in paragraphs:
-                if "Sienna" in para and len(para) > 200:
-                    # Store longer paragraphs focused on Sienna
-                    self.character_voices[character_name][len(self.character_voices[character_name])] = para
-                    
-        # For Rocco, look for strategic thinking, authority, ruthlessness
-        elif character_name == "rocco_marconi":
-            paragraphs = re.split(r'\n\n+', content)
-            for para in paragraphs:
-                if ("Rocco" in para or "I " in para) and len(para) > 150:
-                    # First-person narrative or mentions of Rocco
-                    self.character_voices[character_name][len(self.character_voices[character_name])] = para
-                    
-        # For Carmine, look for anxiety, detail-oriented descriptions
-        elif character_name == "carmine_rossi":
-            paragraphs = re.split(r'\n\n+', content)
-            for para in paragraphs:
-                if "Carmine" in para and len(para) > 150:
-                    self.character_voices[character_name][len(self.character_voices[character_name])] = para
-    
-    def _extract_descriptive_patterns(self, content, desc_type):
-        """Extract descriptive writing patterns
-        
-        Args:
-            content (str): The file content
-            desc_type (str): Type of description (technical, emotional, physical)
-        """
-        paragraphs = re.split(r'\n\n+', content)
-        
-        # Store descriptive paragraphs by type
-        if desc_type not in self.descriptive_patterns:
-            self.descriptive_patterns[desc_type] = {}
+        for i, para in enumerate(paragraphs):
+            para = para.strip()
+            if len(para) < 100:  # Skip short paragraphs
+                continue
+                
+            # Extract dialogue with context
+            dialogue_matches = list(re.finditer(r'["\']([^"\']+)[\'"][\s,.]+((?:[^."\']+)?(?:said|asked|replied|murmured|whispered|called))', para))
+            if dialogue_matches:
+                context = para  # Full paragraph for context
+                for match in dialogue_matches:
+                    self.dialogue_patterns.append({
+                        'dialogue': match.group(1).strip(),
+                        'speaker': match.group(2).strip() if match.group(2) else 'character',
+                        'context': context
+                    })
             
-        for para in paragraphs:
-            # Technical descriptions (AI, code, digital systems)
-            if desc_type == "technical" and any(term in para.lower() for term in ["ai", "algorithm", "digital", "code", "argusnet", "server"]):
-                if len(para) > 100:
-                    self.descriptive_patterns[desc_type][len(self.descriptive_patterns[desc_type])] = para
+            # Extract scene transitions
+            transition_indicators = ['later', 'meanwhile', 'that evening', 'the next day', 'moments later', 'hours later']
+            if any(indicator in para.lower() for indicator in transition_indicators):
+                self.narrative_patterns.append(para)
+                
+            # Extract character development moments
+            character_dev_indicators = [
+                'realized', 'understood', 'felt', 'decided', 'changed', 
+                'remembered', 'questioned', 'wondered', 'recognized'
+            ]
+            if any(indicator in para.lower() for indicator in character_dev_indicators):
+                self.narrative_patterns.append(para)
             
-            # Emotional descriptions (character feelings, tension)
-            elif desc_type == "emotional" and any(term in para.lower() for term in ["felt", "feeling", "anxiety", "fear", "panic", "tension"]):
-                if len(para) > 100:
-                    self.descriptive_patterns[desc_type][len(self.descriptive_patterns[desc_type])] = para
+            # Extract action and plot development
+            action_indicators = [
+                'suddenly', 'quickly', 'immediately', 'rushed', 'leaped',
+                'spun', 'grabbed', 'attacked', 'defended', 'escaped'
+            ]
+            if any(indicator in para.lower() for indicator in action_indicators):
+                self.narrative_patterns.append(para)
             
-            # Physical descriptions (settings, people, actions)
-            elif desc_type == "physical" and not any(term in para.lower() for term in ["ai", "algorithm", "digital", "code"]):
-                if len(para) > 150 and any(term in para.lower() for term in ["room", "office", "face", "body", "stood", "sat"]):
-                    self.descriptive_patterns[desc_type][len(self.descriptive_patterns[desc_type])] = para
-    
+            # Extract descriptive passages
+            descriptive_indicators = {
+                'environmental': ['room', 'building', 'city', 'street', 'office', 'space'],
+                'emotional': ['felt', 'feeling', 'emotion', 'anxiety', 'fear', 'hope'],
+                'physical': ['looked', 'appeared', 'wore', 'carried', 'moved'],
+                'atmospheric': ['air', 'light', 'shadow', 'silence', 'sound'],
+                'technical': ['system', 'code', 'network', 'device', 'screen', 'data']
+            }
+            
+            for desc_type, indicators in descriptive_indicators.items():
+                if any(indicator in para.lower() for indicator in indicators):
+                    self.descriptive_patterns.append({
+                        'content': para,
+                        'type': desc_type
+                    })
+            
+            # Extract plot developments with context
+            plot_indicators = [
+                'discovered', 'revealed', 'changed', 'learned', 'understood',
+                'planned', 'decided', 'confronted', 'escaped', 'succeeded', 'failed'
+            ]
+            matches = [k for k in plot_indicators if k in para.lower()]
+            if matches:
+                # Get surrounding context if available
+                context_start = max(0, i - 1)
+                context_end = min(len(paragraphs), i + 2)
+                context = '\n\n'.join(paragraphs[context_start:context_end])
+                
+                self.plot_patterns.append({
+                    'content': para,
+                    'context': context,
+                    'keywords': matches,
+                    'type': 'plot_development'
+                })
+        
     def _extract_dialogue_patterns(self, content):
         """Extract dialogue patterns from content
         
@@ -237,26 +166,20 @@ class DatasetBuilder:
         dialogue_exchanges = re.findall(r'["\']([^"\']+)[\'"]\s*(?:[^"\']{1,100})\s*["\']([^"\']+)[\'"]', content)
         
         # Process single dialogue lines
-        for i, match in enumerate(dialogue_matches):
+        for match in dialogue_matches:
             if len(match) >= 2:  # We have the quote and the speaker attribution
-                self.dialogue_patterns[len(self.dialogue_patterns)] = {
+                self.dialogue_patterns.append({
                     "speaker": match[1].strip(),
                     "dialogue": match[0].strip()
-                }
-                
-                # Add to character voice samples if it's a known character
-                speaker_lower = match[1].strip().lower()
-                for char_name in self.characters:
-                    if char_name in speaker_lower:
-                        self.characters[char_name]['dialogue_samples'].append(match[0].strip())
+                })
             
         # Process dialogue exchanges
-        for i, match in enumerate(dialogue_exchanges):
+        for match in dialogue_exchanges:
             if len(match) >= 2:
-                self.dialogue_patterns[len(self.dialogue_patterns)] = {
-                    "speaker1": match[0],
-                    "speaker2": match[1]
-                }
+                self.dialogue_patterns.append({
+                    "dialogue": match[0].strip() + ' ' + match[1].strip(),
+                    "speaker": "multiple"
+                })
     
     def _extract_narrative_patterns(self, content):
         """Extract narrative style patterns
@@ -268,8 +191,8 @@ class DatasetBuilder:
         paragraphs = re.split(r'\n\n+', content)
         for para in paragraphs:
             # Skip dialogue-heavy paragraphs
-            if para.count('"') < 4 and len(para) > 200:
-                self.narrative_patterns[len(self.narrative_patterns)] = para
+            if para.count('"') < 4 and len(para.strip()) > 200:
+                self.narrative_patterns.append(para.strip())
     
     def create_examples(self) -> List[Dict[str, Any]]:
         """Create training examples from extracted patterns"""
@@ -277,21 +200,43 @@ class DatasetBuilder:
         
         # Create dialogue examples
         for pattern in self.dialogue_patterns:
+            # Format system prompt with character roles if available
+            system_prompt = self.prompts["dialogue"]["system"].replace(
+                "{character_a}", "the speaker"
+            ).replace(
+                "{character_b}", "the listener"
+            )
+            
             example = {
                 "messages": [
-                    {"role": "system", "content": self.prompts["dialogue"]["system"]},
-                    {"role": "user", "content": self.prompts["dialogue"]["user"]},
-                    {"role": "assistant", "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said."}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": "Write a dialogue line with speaker attribution and context."},
+                    {
+                        "role": "assistant", 
+                        "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said.\n\nContext: {pattern.get('context', '')}"
+                    }
                 ]
             }
             examples.append(example)
         
         # Create narrative examples
         for pattern in self.narrative_patterns:
+            # Get pattern type based on content
+            if "suddenly" in pattern.lower() or "quickly" in pattern.lower():
+                scenario = "an action sequence"
+            elif "later" in pattern.lower() or "meanwhile" in pattern.lower():
+                scenario = "a scene transition"
+            elif "realized" in pattern.lower() or "felt" in pattern.lower():
+                scenario = "a character development moment"
+            else:
+                scenario = "advancing the plot"
+                
+            user_prompt = self.prompts["narrative"]["user"].replace("{scenario}", scenario)
+            
             example = {
                 "messages": [
                     {"role": "system", "content": self.prompts["narrative"]["system"]},
-                    {"role": "user", "content": "Write a narrative paragraph that builds tension and advances the plot."},
+                    {"role": "user", "content": user_prompt},
                     {"role": "assistant", "content": pattern}
                 ]
             }
@@ -299,11 +244,33 @@ class DatasetBuilder:
         
         # Create descriptive examples
         for pattern in self.descriptive_patterns:
+            desc_type = pattern.get('type', 'physical')
+            content = pattern.get('content', pattern)  # Fallback for old format
+            
+            system_prompt = self.prompts["descriptive_prose"]["system"].replace(
+                "{desc_type}", desc_type
+            ).replace(
+                "{style_focus}", self.prompts["descriptive_prose"]["parameters"]["style_focus"].get(desc_type, "sensory details")
+            )
+            
+            # Select appropriate element based on type
+            elements = self.prompts["descriptive_prose"]["parameters"]["element"]
+            if desc_type == "environmental":
+                element = "a significant location"
+            elif desc_type == "emotional":
+                element = "a tense confrontation scene"
+            elif desc_type == "technical":
+                element = "a complex system or process"
+            else:
+                element = elements[0]
+                
+            user_prompt = self.prompts["descriptive_prose"]["user"].replace("{element}", element)
+            
             example = {
                 "messages": [
-                    {"role": "system", "content": self.prompts["descriptive_prose"]["system"]},
-                    {"role": "user", "content": "Write a descriptive paragraph that creates a vivid scene."},
-                    {"role": "assistant", "content": pattern}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": content}
                 ]
             }
             examples.append(example)
@@ -351,17 +318,17 @@ class DatasetBuilder:
         Args:
             content (str): The file content
         """
-        # Plot development keywords from the dossier and common narrative elements
+        # Plot development keywords
         plot_keywords = [
             'motivation', 'conflict', 'plan', 'mission', 'goal', 'discover', 
             'reveal', 'change', 'decision', 'consequence', 'react', 'impact',
             'begin', 'end', 'finally', 'suddenly', 'realize'
-        ] + self.themes + [s.split()[0].lower() for s in self.stakes if s]
+        ]
         
         # Look for paragraphs with plot development
-        paragraphs = re.split(r'\n\n+', content)
+        paragraphs = content.split('\n\n')
         for para in paragraphs:
-            if len(para) > 100:  # Substantial paragraph
+            if len(para.strip()) > 100:  # Substantial paragraph
                 # Check for plot keywords
                 matches = [k for k in plot_keywords if k.lower() in para.lower()]
                 if matches:
@@ -371,23 +338,11 @@ class DatasetBuilder:
                     has_plot_signal = any(s in para.lower() for s in signals)
                     
                     if has_plot_signal or len(matches) >= 2:
-                        self.plot_patterns[len(self.plot_patterns)] = {
-                            'content': para,
+                        self.plot_patterns.append({
+                            'content': para.strip(),
                             'keywords': matches,
                             'type': 'plot_development'
-                        }
-                        
-                # Look for character development
-                for char_name in self.characters:
-                    if char_name in para.lower():
-                        char_signals = ['felt', 'thought', 'decided', 'realized',
-                                      'changed', 'learned', 'understood']
-                        if any(s in para.lower() for s in char_signals):
-                            self.plot_patterns[len(self.plot_patterns)] = {
-                                'content': para,
-                                'character': char_name,
-                                'type': 'character_development'
-                            }
+                        })
 
     def _create_dialogue_examples(self) -> List[Dict]:
         """Create training examples for dialogue
@@ -419,119 +374,51 @@ class DatasetBuilder:
         ]
         
         # Create examples for each dialogue pattern
-        for pattern in self.dialogue_patterns.values():
-            if "speaker" in pattern and "dialogue" in pattern:
-                # Single line dialogue
-                for char_pair in character_pairs:
-                    topic = random.choice(topics)
-                    example = {
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
-                            },
-                            {
-                                "role": "user",
-                                "content": f"Write a brief dialogue about {topic} between two characters: {char_pair[0]} and {char_pair[1]}."
-                            },
-                            {
-                                "role": "assistant",
-                                "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said."
-                            }
-                        ]
-                    }
-                    examples.append(example)
-            
-            # For multi-line dialogues
-            elif "dialogue1" in pattern and "dialogue2" in pattern:
-                for char_pair in character_pairs:
-                    topic = random.choice(topics)
-                    example = {
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
-                            },
-                            {
-                                "role": "user",
-                                "content": f"Write a dialogue exchange about {topic} between {char_pair[0]} and {char_pair[1]}."
-                            },
-                            {
-                                "role": "assistant",
-                                "content": f"\"{pattern['dialogue1']}\" {char_pair[0]} said.\n\n\"{pattern['dialogue2']}\" {char_pair[1]} replied."
-                            }
-                        ]
-                    }
-                    examples.append(example)
-                    
-        return examples
-                "the progress of a digital infiltration",
-                "security vulnerabilities in the target system",
-                "ethical implications of their actions",
-                "detection risks and countermeasures",
-                "next steps in their operation"
-            ],
-            ("Rocco Marconi", "Carmine Rossi"): [
-                "the mysterious financial losses",
-                "identifying the source of the attacks",
-                "consequences of failure",
-                "family business security",
-                "traditional versus digital threats"
-            ],
-            ("Rocco Marconi", "Enzo Bellini"): [
-                "hunting down the digital attacker",
-                "changing tactics to counter the invisible threat",
-                "enforcing loyalty in the organization",
-                "the future of their operations",
-                "assigning responsibilities for the investigation"
-            ],
-            ("Carmine Rossi", "Leo"): [
-                "analyzing the breach data",
-                "explaining the severity of the situation",
-                "technical details of the intrusion",
-                "possible countermeasures",
-                "reporting requirements to higher-ups"
-            ],
-            ("Sienna Voss", "Rocco Marconi"): [
-                "a confrontation about digital warfare",
-                "philosophical differences about power",
-                "mutual respect between adversaries",
-                "threats and counter-threats",
-                "negotiating boundaries"
-            ]
-        }
-        
-        # Use available dialogue patterns and create examples
-        dialogue_count = min(len(self.dialogue_patterns), 10)
-        for i in range(dialogue_count):
-            if i >= len(self.dialogue_patterns):
-                break
-                
-            # Select random character pair and topic
+        for pattern in self.dialogue_patterns:
+            # Randomly select a character pair and topic
             char_pair = random.choice(character_pairs)
-            topic = random.choice(topics[char_pair])
+            topic = random.choice(topics)
             
-            # Create a dialogue example using pattern structure but with character names
-            dialogue_content = f"\"{self.dialogue_patterns[i]['speaker1']}\" {char_pair[0]} said, his eyes narrowing.\n\n\"{self.dialogue_patterns[i]['speaker2']}\" {char_pair[1]} replied firmly."
+            if pattern["speaker"] == "multiple":
+                # It's a dialogue exchange
+                dialogues = pattern["dialogue"].split('" "')  # Split at dialogue boundary
+                example = {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Write a dialogue exchange about {topic} between {char_pair[0]} and {char_pair[1]}."
+                        },
+                        {
+                            "role": "assistant",
+                            "content": f"\"{dialogues[0]}\" {char_pair[0]} said.\n\n\"{dialogues[1]}\" {char_pair[1]} replied."
+                        }
+                    ]
+                }
+            else:
+                # Single line dialogue
+                example = {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a creative writing assistant specializing in dialogue. Create natural, character-driven conversations that reveal personality and advance the story."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Write a brief dialogue about {topic} between two characters: {char_pair[0]} and {char_pair[1]}."
+                        },
+                        {
+                            "role": "assistant", 
+                            "content": f"\"{pattern['dialogue']}\" {pattern['speaker']} said."
+                        }
+                    ]
+                }
             
-            example = {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": f"You are a creative writing assistant specializing in dialogue for the Vendetta Protocol series. Create dialogue that reflects the relationship between {char_pair[0]} and {char_pair[1]}."
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Write a dialogue exchange between {char_pair[0]} and {char_pair[1]} about {topic}."
-                    },
-                    {
-                        "role": "assistant",
-                        "content": dialogue_content
-                    }
-                ]
-            }
             examples.append(example)
-                
+                    
         return examples
     
     def _create_narrative_examples(self) -> List[Dict]:
@@ -588,51 +475,56 @@ class DatasetBuilder:
         Returns:
             List[Dict]: List of formatted training examples
         """
-        # This would use the chapter summaries to create plot development examples
-        # For now, returning an empty list as implementation depends on specific needs
-        return []
-    
-    def generate_jsonl_dataset(self, output_filename="finetune_dataset.jsonl", validation_split=0.2):
-        """Generate JSONL dataset with training examples and validation split
-        
-        Args:
-            output_filename (str): Name of the output file
-            validation_split (float): Fraction of data to use for validation
-            
-        Returns:
-            Tuple[str, str]: Paths to training and validation files
-        """
         examples = []
         
-        # Generate examples from different categories
-        character_examples = self._create_character_voice_examples()
-        descriptive_examples = self._create_descriptive_examples()
-        dialogue_examples = self._create_dialogue_examples()
-        narrative_examples = self._create_narrative_examples()
-        plot_examples = self._create_plot_examples()
+        # Plot scenario templates
+        scenarios = {
+            'discovered': 'a character discovering a crucial plot element',
+            'revealed': 'revealing a hidden truth',
+            'changed': 'a significant change in circumstances',
+            'planned': 'characters planning their next move',
+            'confronted': 'a confrontation between key characters',
+            'escaped': 'characters escaping a dangerous situation',
+            'failed': 'dealing with failure and its consequences',
+            'succeeded': 'achieving a goal with unexpected results'
+        }
         
-        print(f"Generated {len(character_examples)} character voice examples")
-        print(f"Generated {len(descriptive_examples)} descriptive writing examples")
-        print(f"Generated {len(dialogue_examples)} dialogue examples")
-        print(f"Generated {len(narrative_examples)} narrative style examples")
-        print(f"Generated {len(plot_examples)} plot development examples")
-        
-        # Combine all examples
-        examples = character_examples + descriptive_examples + dialogue_examples + narrative_examples + plot_examples
-        
-        # Shuffle and split for validation
+        for pattern in self.plot_patterns:
+            # Get the primary plot development type
+            keywords = pattern.get('keywords', [])
+            plot_type = keywords[0] if keywords else 'general'
+            scenario = scenarios.get(plot_type, 'advancing the plot')
+            
+            example = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a creative writing assistant specializing in plot development for high-stakes thrillers. Focus on creating compelling story developments that maintain tension and reader engagement."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Write a scene about {scenario}. Include context and consequences."
+                    },
+                    {
+                        "role": "assistant",
+                        "content": pattern.get('content', '') + '\n\nContext: ' + pattern.get('context', '')
+                    }
+                ]
+            }
+            examples.append(example)
+                
+        return examples
+        examples = self.create_examples()
         random.shuffle(examples)
-        split_index = int(len(examples) * (1 - validation_split))
-        training_examples = examples[:split_index]
-        validation_examples = examples[split_index:]
         
-        print(f"Total examples: {len(examples)}")
-        print(f"Training examples: {len(training_examples)}")
-        print(f"Validation examples: {len(validation_examples)}")
+        # Split into training (80%) and validation (20%) sets
+        split_point = int(len(examples) * 0.8)
+        training_examples = examples[:split_point]
+        validation_examples = examples[split_point:]
         
-        # Write to output files
-        training_path = os.path.join(self.output_dir, f"training_{output_filename}")
-        validation_path = os.path.join(self.output_dir, f"validation_{output_filename}")
+        # Save datasets
+        training_path = os.path.join(self.output_dir, 'training_finetune_dataset.jsonl')
+        validation_path = os.path.join(self.output_dir, 'validation_finetune_dataset.jsonl')
         
         with open(training_path, 'w', encoding='utf-8') as f:
             for example in training_examples:
@@ -642,8 +534,12 @@ class DatasetBuilder:
             for example in validation_examples:
                 f.write(json.dumps(example) + '\n')
         
-        print(f"Training data saved to: {training_path}")
-        print(f"Validation data saved to: {validation_path}")
+        print(f"\nDataset generation complete!")
+        print(f"Training examples: {len(training_examples)}")
+        print(f"Validation examples: {len(validation_examples)}")
+        print(f"\nFiles saved to:")
+        print(f"Training: {training_path}")
+        print(f"Validation: {validation_path}")
         
         return training_path, validation_path
     
