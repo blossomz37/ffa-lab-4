@@ -49,6 +49,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+.env
 
 # Output files (optional - you may want to track these)
 # output/

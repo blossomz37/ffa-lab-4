@@ -58,46 +58,72 @@ This is a novel-writing project that involves collaboration between a human auth
 ## Fine-tuning Implementation
 
 ### Dataset Schema
-The fine-tuning dataset uses OpenAI's JSONL conversation format:
+The fine-tuning dataset uses OpenAI's JSONL conversation format with specialized prompts and contextual information:
+
 ```json
 {
   "messages": [
     {
       "role": "system", 
-      "content": "You are a creative writing assistant that specializes in [WRITING_TYPE], creating engaging and vivid content."
+      "content": "You are a creative writing assistant specializing in [WRITING_TYPE], focusing on [STYLE_FOCUS] and [TECHNIQUE]."
     },
     {
       "role": "user", 
-      "content": "[WRITING_PROMPT]"
+      "content": "Write a [CATEGORY] about [SCENARIO] between [CHARACTER_A] and [CHARACTER_B]."
     },
     {
       "role": "assistant", 
-      "content": "[WRITING_EXAMPLE]"
+      "content": "[WRITING_EXAMPLE]\n\nContext: [SURROUNDING_CONTEXT]"
     }
   ]
 }
 ```
 
-### Core Categories for Training Examples
-The training examples are organized into these categories:
+### Prompt Templates
+Located in `/prompts/*.json`, specialized for each writing category:
+- `dialogue.json`: Character dynamics and conversation patterns
+- `narrative.json`: Scene flow and story progression
+- `descriptive_prose.json`: Multi-category descriptions
+- Includes parameters for style focus, scenarios, and relationships
+```
 
-1. **Dialogue Writing**
-   - Natural conversation patterns
-   - Speaker attribution
-   - Character interactions
+### Fine-tuning Status
+
+A fine-tuned model has been successfully created and tested:
+- Model ID: `ft:gpt-3.5-turbo-0125:personal::C2OM1LSz`
+- Base Model: GPT-3.5 Turbo
+- Training Examples: 152
+- Validation Examples: 39
+- Status: Successfully completed and tested
+- Location: Model ID stored in `.env` file as `FINETUNED_MODEL`
+
+### Core Categories for Training Examples
+The training examples are organized into these categories, each with specialized prompt templates in `/prompts/*.json`:
+
+1. **Dialogue Writing** (`dialogue.json`)
+   - Dynamic character relationships
+   - Context-aware conversation patterns
+   - Specialized role-based interactions
+   - Scene-integrated dialogue
 
 2. **Narrative Writing**
-   - Plot development
-   - Action sequences
-   - Scene transitions
+   - Plot development and scene transitions
+   - Action sequences and pacing
+   - Character development moments
+   - Story progression markers
 
 3. **Descriptive Writing**
-   - Sensory details
-   - Setting descriptions
-   - Character observations
+   - Environmental descriptions (settings, locations)
+   - Emotional descriptions (feelings, atmosphere)
+   - Physical descriptions (characters, objects)
+   - Technical descriptions (systems, technology)
+   - Atmospheric descriptions (mood, ambiance)
 
-4. **Narrative Style**
-   - Overall narrative flow and pacing
+4. **Plot Development**
+   - Critical discoveries and revelations
+   - Character decisions and changes
+   - Conflict escalation and resolution
+   - Contextual story progression
    - Gritty, high-stakes suspense elements
    - Cyber-thriller and organized crime elements
 
