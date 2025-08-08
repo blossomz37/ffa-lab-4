@@ -44,7 +44,7 @@ The training examples are organized into these categories:
 
 - Python 3.9+
 - OpenAI API key set in .env file (`OPENAI_API_KEY`)
-- Fine-tuned model ID set in .env file (`FINETUNED_MODEL`)
+- Fine-tuned model ID set in .env file (`FINE_TUNED_MODEL_ID`)
 
 ### Setup and Installation
 
@@ -63,7 +63,7 @@ The training examples are organized into these categories:
    python -m pip install openai python-dotenv
    ```
 
-4. Create a .env file with your OpenAI API key:
+4. Create a .env file with your OpenAI API key (start from .env.example):
    ```
    OPENAI_API_KEY=your-api-key-here
    ```
@@ -100,7 +100,7 @@ The script automatically:
 
 ### Using the Fine-tuned Model
 
-The project includes a fine-tuned model that has been trained on your writing style. The model ID is stored in your `.env` file as `FINETUNED_MODEL`.
+The project includes a fine-tuned model that has been trained on your writing style. The model ID is stored in your `.env` file as `FINE_TUNED_MODEL_ID`.
 
 To test the model:
 ```bash

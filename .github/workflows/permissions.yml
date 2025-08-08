@@ -1,0 +1,35 @@
+name: Enforce Script Permissions
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  permissions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure git tracks file mode changes
+        run: git config core.filemode true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run permission setter
+        run: python set_permissions.py
+
+      - name: Fail if permissions were changed
+        run: |
+          if ! git diff --quiet; then
+            echo "Executable permissions were corrected. Please run set_permissions.py locally and commit." >&2
+            git diff --name-status
+            exit 1
+          fi

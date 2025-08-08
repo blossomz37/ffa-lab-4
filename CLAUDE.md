@@ -95,7 +95,7 @@ A fine-tuned model has been successfully created and tested:
 - Training Examples: 152
 - Validation Examples: 39
 - Status: Successfully completed and tested
-- Location: Model ID stored in `.env` file as `FINETUNED_MODEL`
+- Location: Model ID stored in `.env` file as `FINE_TUNED_MODEL_ID`
 
 ### Core Categories for Training Examples
 The training examples are organized into these categories, each with specialized prompt templates in `/prompts/*.json`:

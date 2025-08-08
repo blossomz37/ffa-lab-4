@@ -13,9 +13,10 @@ def test_model():
     
     # Initialize OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-    model_id = os.getenv('FINETUNED_MODEL')
+    # Prefer FINE_TUNED_MODEL_ID, fall back to FINETUNED_MODEL for backward compatibility
+    model_id = os.getenv('FINE_TUNED_MODEL_ID') or os.getenv('FINETUNED_MODEL')
     if not model_id:
-        raise ValueError("FINETUNED_MODEL not found in environment variables")
+        raise ValueError("FINE_TUNED_MODEL_ID not found in environment variables")
     
     # Test prompts
     test_prompts = [

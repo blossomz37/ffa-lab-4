@@ -51,6 +51,9 @@ Thumbs.db
 *.temp
 .env
 
+# Local archives and transcripts
+.archive/
+
 # Output files (optional - you may want to track these)
 # output/
 # datasets/

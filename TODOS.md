@@ -1,6 +1,6 @@
-# Next Steps for Writing Style Fine-tuning Project
+# Steps for Writing Style Fine-tuning Project
 
-## Your Tasks:
+## Tasks:
 
 1. ✓ **Set up the environment**
    - ✓ Run the master setup script to prepare the directory structure:
@@ -82,7 +82,7 @@
 3. ✓ **Fine-tuning**: Successfully completed with model ID `ft:gpt-3.5-turbo-0125:personal::C2OM1LSz`
 4. ✓ **Testing**: Initial tests successful
 
-Tips:
+### Tips:
 - Start with a small set of high-quality writing samples
 - Review extracted patterns before generating the full dataset
 - Add more samples incrementally to improve coverage

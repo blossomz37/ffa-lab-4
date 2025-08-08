@@ -1,41 +1,37 @@
 #!/usr/bin/env python3
 import os
 import subprocess
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent
 
 print("Making scripts executable...")
-# Change permissions to make scripts executable
-os.chmod('/Users/carlo/Lab-4/master_setup.sh', 0o755)
-os.chmod('/Users/carlo/Lab-4/setup.sh', 0o755)
-os.chmod('/Users/carlo/Lab-4/cleanup.sh', 0o755)
-os.chmod('/Users/carlo/Lab-4/make_scripts_executable.sh', 0o755)
-os.chmod('/Users/carlo/Lab-4/make_tools_executable.sh', 0o755)
 
-# List scripts in scripts directory
-scripts_dir = '/Users/carlo/Lab-4/scripts'
-if os.path.exists(scripts_dir):
-    for script in os.listdir(scripts_dir):
-        if script.endswith('.py'):
-            script_path = os.path.join(scripts_dir, script)
-            os.chmod(script_path, 0o755)
-            print(f"Made executable: {script_path}")
+def make_x(p: Path):
+    try:
+        os.chmod(p, os.stat(p).st_mode | 0o111)
+        print(f"Made executable: {p}")
+    except FileNotFoundError:
+        print(f"Skip (not found): {p}")
 
-# List scripts in tools directory
-tools_dir = '/Users/carlo/Lab-4/tools'
-if os.path.exists(tools_dir):
-    for tool in os.listdir(tools_dir):
-        if tool.endswith('.py'):
-            tool_path = os.path.join(tools_dir, tool)
-            os.chmod(tool_path, 0o755)
-            print(f"Made executable: {tool_path}")
+# Shell helpers
+for sh in ["master_setup.sh", "setup.sh", "cleanup.sh", "make_scripts_executable.sh", "make_tools_executable.sh"]:
+    make_x(project_root / sh)
+
+# Python scripts
+for d in [project_root / "scripts", project_root / "tools"]:
+    if d.is_dir():
+        for f in d.glob("*.py"):
+            make_x(f)
 
 # Execute the master setup script
 print("\nExecuting master_setup.sh...")
 try:
-    result = subprocess.run(['/Users/carlo/Lab-4/master_setup.sh'], 
-                           cwd='/Users/carlo/Lab-4',
-                           check=True,
-                           text=True,
-                           capture_output=True)
+    result = subprocess.run([str(project_root / 'master_setup.sh')],
+                            cwd=str(project_root),
+                            check=True,
+                            text=True,
+                            capture_output=True)
     print(result.stdout)
     if result.stderr:
         print("Errors:", result.stderr)
