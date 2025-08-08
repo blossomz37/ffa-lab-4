@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """
-Content Generation with Fine-tuned Models
+Content Generation with Fine-tuned Models (student-friendly)
 
-This script generates content using fine-tuned models through templates.
+What this script does:
+- Loads prompt templates from the prompts/ folder
+- Lets you list or inspect templates (no API key required)
+- Generates content with your fine-tuned model (API key required)
+
+Adult learner notes:
+- Costs: Generation uses credits. Listing templates is free.
+- Safety: Keep your API key in .env and never commit it.
+- Workflow: Start by listing templates, then try interactive generation with --model.
 """
 
 import os
@@ -21,18 +29,25 @@ class ContentGenerator:
             model_id (str): ID of the fine-tuned model
             api_key (str, optional): OpenAI API key (defaults to environment variable)
         """
-        # Load environment variables from .env file
+        # Load environment variables from .env file (if present)
         load_dotenv()
-        
-        # Use provided API key or get from environment
-        if api_key is None:
-            api_key = os.getenv('OPENAI_API_KEY')
-            if not api_key:
-                raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
-        
-        self.client = OpenAI(api_key=api_key)
+
+        # Lazy client creation: we only need the key/client when generating
+        self._api_key = api_key or os.getenv('OPENAI_API_KEY')
+        self.client: Optional[OpenAI] = None
         self.model_id = model_id
         self.templates = self._load_templates()
+
+    def _ensure_client(self) -> None:
+        """Create the OpenAI client on first use.
+
+        Listing and showing templates do not need the client.
+        Generation will initialize this if missing.
+        """
+        if self.client is None:
+            if not self._api_key:
+                raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
+            self.client = OpenAI(api_key=self._api_key)
         
     def _load_templates(self) -> Dict[str, Dict[str, Any]]:
         """Load templates from the templates directory
@@ -163,30 +178,33 @@ class ContentGenerator:
         return self.templates[template_name]
     
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
-    def generate_content(self, template_name: str, params: Dict[str, Any] = None) -> str:
-        """Generate content using a template
-        
+    def generate_content(self, template_name: str, params: Optional[Dict[str, Any]] = None) -> str:
+        """Generate content using a template.
+
         Args:
             template_name (str): Name of the template
-            params (Dict[str, Any], optional): Template parameters
-            
+            params (Optional[Dict[str, Any]]): Template parameters
+
         Returns:
             str: Generated content
         """
         if template_name not in self.templates:
             raise ValueError(f"Template '{template_name}' not found")
-            
+
         template = self.templates[template_name]
-        
+
         # Fill in template parameters
         system_prompt = template["system"]
         user_prompt = template["user"]
-        
+
         if params:
             system_prompt = system_prompt.format(**params)
             user_prompt = user_prompt.format(**params)
-            
+
         # Generate content
+        self._ensure_client()
+        # Type assertion for static checkers
+        assert self.client is not None
         response = self.client.chat.completions.create(
             model=self.model_id,
             messages=[
@@ -196,8 +214,9 @@ class ContentGenerator:
             temperature=0.7,
             max_tokens=500
         )
-        
-        return response.choices[0].message.content
+
+        content = response.choices[0].message.content or ""
+        return content
     
     def fill_template_params(self, template_name: str) -> Dict[str, Any]:
         """Interactively fill template parameters

@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 """
-Test script for the fine-tuned model
+Fine-tuned Model Smoke Test (student-friendly)
+
+What this script does:
+- Loads your API key and model ID from the environment (.env)
+- Sends a few representative prompts (dialogue, description, scene)
+- Prints raw outputs so you can eyeball style alignment
+
+Adult learner notes:
+- Keep tests short: long outputs consume credits.
+- If you change prompts, keep them consistent across model comparisons.
+- FAIL FAST: If the first response is clearly off-style, stop and revisit your dataset.
 """
 
 import os

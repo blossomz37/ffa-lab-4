@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
-Dataset Builder for Fine-tuning
+Dataset Builder for Fine-tuning (no API key required)
 
-This script processes writing samples and prepares them as training data for fine-tuning
-language models, with a focus on dialogue, narrative, and descriptive writing.
+What this script does:
+- Reads your source texts from the "original documents" folder
+- Extracts patterns (dialogue, narrative, descriptive, plot cues)
+- Formats examples into JSONL for training/validation
+
+Notes for students:
+- You do NOT need an OpenAI API key to run this script.
+- Output files go to the datasets/ folder.
+- You can iterate: add or edit source documents, rerun, and revalidate.
 """
 
 import json
@@ -11,38 +18,34 @@ import os
 import re
 import glob
 import random
-from typing import List, Dict, Any, Optional
-from openai import OpenAI
-from dotenv import load_dotenv
+from typing import List, Dict, Any, Optional, Iterable
 
 class DatasetBuilder:
-    def __init__(self, source_dir: str, output_dir: str):
-        """Initialize the dataset builder
-        
+    def __init__(self, source_dir: str, output_dir: str, file_pattern: str = "*.md", ignore_prefixes: Optional[Iterable[str]] = None):
+        """Initialize the dataset builder.
+
         Args:
-            source_dir: Directory containing source material
-            output_dir: Directory to save output files
+            source_dir: Directory containing source material (markdown files).
+            output_dir: Directory to save output JSONL datasets.
+            file_pattern: Glob pattern to match source files (default: *.md).
+            ignore_prefixes: Iterable of filename prefixes (e.g. ("draft_", "old_")) to skip.
+
+        Notes:
+            - No API calls are made here; everything is local text processing.
+            - Natural sorting is applied so chapter2 comes before chapter10.
         """
-        # Load environment variables
-        load_dotenv()
-        
-        # Initialize OpenAI client
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables. Please check your .env file.")
-        self.client = OpenAI(api_key=api_key)
-        
-        # Setup directories
         self.source_dir = source_dir
         self.output_dir = output_dir
+        self.file_pattern = file_pattern
+        self.ignore_prefixes = tuple(ignore_prefixes) if ignore_prefixes else tuple()
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Initialize pattern storage
-        self.dialogue_patterns = []
-        self.narrative_patterns = []
-        self.descriptive_patterns = []
-        self.plot_patterns = []
-        
+        self.dialogue_patterns: List[Dict[str, Any]] = []
+        self.narrative_patterns: List[str] = []
+        self.descriptive_patterns: List[Dict[str, Any]] = []
+        self.plot_patterns: List[Dict[str, Any]] = []
+
         # Load prompt templates
         self.prompts = self._load_prompts()
         
@@ -58,17 +61,41 @@ class DatasetBuilder:
                 
         return prompts
     
+    def _natural_key(self, name: str):
+        """Return a key for natural sorting (chapter2 before chapter10)."""
+        import re as _re
+        return [int(text) if text.isdigit() else text.lower() for text in _re.split(r'(\d+)', name)]
+
     def process_files(self) -> None:
-        """Process all files in the source directory"""
-        print(f"Processing files in {self.source_dir}...")
-        
-        # Get all markdown files
-        markdown_files = glob.glob(f"{self.source_dir}/*.md")
-        for file_path in sorted(markdown_files):
+        """Process all matching files in the source directory respecting ignore rules."""
+        print(f"Processing files in {self.source_dir} (pattern: {self.file_pattern})...")
+
+        pattern_path = os.path.join(self.source_dir, self.file_pattern)
+        candidate_files = glob.glob(pattern_path)
+
+        def _is_ignored(filename: str) -> bool:
+            base = os.path.basename(filename)
+            if base.startswith('.'):
+                return True
+            return any(base.startswith(pref) for pref in self.ignore_prefixes)
+
+        markdown_files = [f for f in candidate_files if f.lower().endswith('.md') and not _is_ignored(f)]
+        markdown_files.sort(key=lambda p: self._natural_key(os.path.basename(p)))
+
+        if not markdown_files:
+            print("⚠️  No source files matched. Adjust naming or pattern.")
+            return
+
+        for file_path in markdown_files:
             print(f"Processing {os.path.basename(file_path)}...")
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                self.extract_patterns(content)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    self.extract_patterns(content)
+            except UnicodeDecodeError:
+                print(f"Skipping (decode error): {file_path}")
+            except OSError as e:
+                print(f"Skipping ({e.__class__.__name__}): {file_path} -> {e}")
         
         print("\nProcessing complete!")
         print(f"Found {len(self.dialogue_patterns)} dialogue patterns")
@@ -555,6 +582,10 @@ def main():
                        help="Directory containing source materials")
     parser.add_argument("--output_dir", default="datasets",
                        help="Directory to save output files")
+    parser.add_argument("--file_pattern", default="*.md",
+                        help="Glob pattern to select source files (default: *.md)")
+    parser.add_argument("--ignore_prefix", action="append", default=[],
+                        help="Filename prefix to ignore (can be repeated), e.g. --ignore_prefix draft_ --ignore_prefix old_")
     
     args = parser.parse_args()
     
@@ -563,7 +594,9 @@ def main():
     output_dir = os.path.abspath(args.output_dir)
     
     # Create and run builder
-    builder = DatasetBuilder(source_dir, output_dir)
+    builder = DatasetBuilder(source_dir, output_dir,
+                             file_pattern=args.file_pattern,
+                             ignore_prefixes=args.ignore_prefix)
     builder.process_files()
     builder.generate_datasets()
 

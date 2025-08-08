@@ -1,8 +1,32 @@
 #!/usr/bin/env python3
 """
-Fine-tuning Job Submission
+Fine-tuning job submission and monitoring (student-friendly)
 
-This script submits fine-tuning jobs to OpenAI, monitors progress, and manages models.
+What this script does (in plain language):
+- Uploads your training/validation JSONL files to OpenAI
+- Starts a fine-tuning job
+- Checks status, monitors progress, and lists jobs/models
+- Saves job details and events for later review
+
+Adult learner notes:
+- Costs: Fine-tuning consumes credits. Review OpenAI pricing and your quota before starting.
+- Time: Jobs can take minutes to hours depending on dataset size and queue load.
+- Safety: Keep your API key in .env (not in code). Don’t commit secrets to Git.
+
+Quick usage examples:
+1) Upload dataset file
+    python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
+
+2) Start a job (replace file-IDs and adjust model/suffix)
+    python scripts/finetune_submit.py submit --training-file file-abc123 \
+         --validation-file file-def456 --model gpt-3.5-turbo --suffix my-finetune
+
+3) Monitor progress
+    python scripts/finetune_submit.py monitor ftjob-abc123
+
+4) List recent jobs or models
+    python scripts/finetune_submit.py list-jobs --limit 5
+    python scripts/finetune_submit.py list-models
 """
 
 import os
@@ -16,10 +40,14 @@ from dotenv import load_dotenv
 
 class FineTuningManager:
     def __init__(self, api_key: Optional[str] = None):
-        """Initialize the fine-tuning manager
-        
+        """Initialize the fine-tuning manager.
+
         Args:
             api_key (str, optional): OpenAI API key (defaults to environment variable)
+
+        Notes for students:
+        - The API key is read from your .env via python-dotenv if not provided.
+        - Keep your key private. Never paste it into code that will be shared.
         """
         # Load environment variables from .env file
         load_dotenv()
@@ -34,18 +62,21 @@ class FineTuningManager:
         
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
     def upload_file(self, file_path: str, purpose: str = "fine-tune") -> str:
-        """Upload a file to OpenAI with retries
-        
+        """Upload a file to OpenAI with retries.
+
         Args:
             file_path (str): Path to the file to upload
             purpose (str): Purpose of the file
-            
+
         Returns:
             str: ID of the uploaded file
+
+        Tip: Use this to upload both training and validation JSONL files.
         """
         print(f"Uploading {file_path} to OpenAI...")
         with open(file_path, "rb") as file:
-            response = self.client.files.create(file=file, purpose=purpose)
+            # purpose must be one of the allowed literals (e.g., "fine-tune")
+            response = self.client.files.create(file=file, purpose="fine-tune")
         print(f"File uploaded with ID: {response.id}")
         return response.id
     
@@ -55,7 +86,7 @@ class FineTuningManager:
                              model: str = "gpt-3.5-turbo", 
                              suffix: Optional[str] = None,
                              hyperparameters: Optional[Dict[str, Any]] = None) -> str:
-        """Submit a fine-tuning job to OpenAI
+        """Submit a fine-tuning job to OpenAI.
         
         Args:
             training_file_id (str): ID of the training file
@@ -66,10 +97,14 @@ class FineTuningManager:
             
         Returns:
             str: ID of the fine-tuning job
+        
+        Guidance:
+        - Keep jobs simple for your first run; defaults are fine.
+        - Add a short suffix so you can recognize your model later.
         """
         print(f"Submitting fine-tuning job for model {model}...")
         
-        job_args = {
+        job_args: Dict[str, Any] = {
             "training_file": training_file_id,
             "model": model,
         }
@@ -81,6 +116,7 @@ class FineTuningManager:
             job_args["suffix"] = suffix
             
         if hyperparameters:
+            # The SDK expects a structured Hyperparameters payload; pass as dict fields
             job_args["hyperparameters"] = hyperparameters
         
         job = self.client.fine_tuning.jobs.create(**job_args)
@@ -90,11 +126,11 @@ class FineTuningManager:
         return job.id
     
     def get_job_status(self, job_id: str) -> Dict[str, Any]:
-        """Get the status of a fine-tuning job
-        
+        """Get the status of a fine-tuning job.
+
         Args:
             job_id (str): ID of the fine-tuning job
-            
+
         Returns:
             Dict[str, Any]: Job status information
         """
@@ -112,11 +148,11 @@ class FineTuningManager:
         }
     
     def list_jobs(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """List fine-tuning jobs
-        
+        """List fine-tuning jobs.
+
         Args:
             limit (int): Maximum number of jobs to list
-            
+
         Returns:
             List[Dict[str, Any]]: List of job information
         """
@@ -130,13 +166,13 @@ class FineTuningManager:
         } for job in jobs.data]
     
     def monitor_job(self, job_id: str, interval: int = 60, max_time: int = 7200) -> Dict[str, Any]:
-        """Monitor a fine-tuning job until completion
-        
+        """Monitor a fine-tuning job until completion.
+
         Args:
             job_id (str): ID of the fine-tuning job
             interval (int): Check interval in seconds
             max_time (int): Maximum monitoring time in seconds
-            
+
         Returns:
             Dict[str, Any]: Final job status
         """
@@ -166,8 +202,8 @@ class FineTuningManager:
             time.sleep(interval)
     
     def list_models(self) -> List[Dict[str, Any]]:
-        """List available models
-        
+        """List available models.
+
         Returns:
             List[Dict[str, Any]]: List of model information
         """
@@ -175,11 +211,11 @@ class FineTuningManager:
         return [{"id": model.id, "created": model.created} for model in models.data]
     
     def delete_model(self, model_id: str) -> bool:
-        """Delete a fine-tuned model
-        
+        """Delete a fine-tuned model.
+
         Args:
             model_id (str): ID of the model to delete
-            
+
         Returns:
             bool: Whether the deletion was successful
         """
@@ -192,11 +228,14 @@ class FineTuningManager:
             return False
     
     def save_job_details(self, job_id: str, output_file: str) -> None:
-        """Save job details to a JSON file
-        
+        """Save job details and events to a JSON file.
+
         Args:
             job_id (str): ID of the fine-tuning job
             output_file (str): Path to the output file
+
+        Why save this?
+        - Great for post-mortems, grading, or sharing a report with your team.
         """
         job_status = self.get_job_status(job_id)
         

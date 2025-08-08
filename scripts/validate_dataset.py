@@ -1,9 +1,22 @@
 #!/usr/bin/env python3
 """
-JSONL Dataset Validator for OpenAI Fine-tuning
+JSONL Dataset Validator (student-friendly)
 
-This script validates JSONL files for OpenAI fine-tuning, checking for proper
-format, token limits, and other requirements.
+Purpose:
+- Quickly spot structural issues in your fine-tuning JSONL before upload.
+- Provide summary stats (counts, rough token estimates, category distribution).
+
+What it checks:
+1. Each line is valid JSON.
+2. Each example has a messages list with >= 2 items.
+3. Roles are only system/user/assistant and alternate correctly.
+4. Assistant is the last role.
+5. Rough token estimate (warns if beyond typical limits).
+
+Adult learner notes:
+- This is a static check: it does not call the OpenAI API—no costs.
+- Token estimate is approximate (word_count * 1.3). Use official tools for precise counts if needed.
+- Run this after every dataset rebuild to catch regressions early.
 """
 
 import json
