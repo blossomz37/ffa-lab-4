@@ -40,7 +40,7 @@ python scripts/validate_dataset.py datasets/training_finetune_dataset.jsonl --su
 python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
 
 # 2. Submit fine-tuning job (use file ID from upload)
-python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-3.5-turbo --suffix style-lab
+python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-4.1-nano-2025-04-14 --suffix style-lab
 
 # 3. Monitor job progress
 python scripts/finetune_submit.py monitor ftjob-XXXX
@@ -89,7 +89,7 @@ Located in `/prompts/`, each JSON template defines:
 - **plot_development.json**: Revelations, decisions, conflict escalation
 
 ### Model Configuration
-- Base Model: GPT-3.5 Turbo (cost-effective for style learning)
+- Base Model: GPT-4.1 Nano (cost-effective for style learning)
 - Training Split: 80/20 (training/validation)
 - Token Limits: Max 500 tokens per example (prevent overfitting)
 - Temperature: 0.7-0.9 for generation (balances creativity/consistency)

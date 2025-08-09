@@ -19,7 +19,7 @@ Quick usage examples:
 
 2) Start a job (replace file-IDs and adjust model/suffix)
     python scripts/finetune_submit.py submit --training-file file-abc123 \
-         --validation-file file-def456 --model gpt-3.5-turbo --suffix my-finetune
+         --validation-file file-def456 --model gpt-4.1-nano-2025-04-14 --suffix my-finetune
 
 3) Monitor progress
     python scripts/finetune_submit.py monitor ftjob-abc123
@@ -83,7 +83,7 @@ class FineTuningManager:
     def submit_fine_tuning_job(self, 
                              training_file_id: str, 
                              validation_file_id: Optional[str] = None, 
-                             model: str = "gpt-3.5-turbo", 
+                             model: str = "gpt-4.1-nano-2025-04-14", 
                              suffix: Optional[str] = None,
                              hyperparameters: Optional[Dict[str, Any]] = None) -> str:
         """Submit a fine-tuning job to OpenAI.
@@ -270,7 +270,7 @@ def main():
     submit_parser = subparsers.add_parser("submit", help="Submit a fine-tuning job")
     submit_parser.add_argument("--training-file", required=True, help="ID of the training file")
     submit_parser.add_argument("--validation-file", help="ID of the validation file")
-    submit_parser.add_argument("--model", default="gpt-3.5-turbo", help="Base model to fine-tune")
+    submit_parser.add_argument("--model", default="gpt-4.1-nano-2025-04-14", help="Base model to fine-tune")
     submit_parser.add_argument("--suffix", help="Suffix for the fine-tuned model name")
     submit_parser.add_argument("--epochs", type=int, help="Number of training epochs")
     submit_parser.add_argument("--batch-size", help="Batch size for training")

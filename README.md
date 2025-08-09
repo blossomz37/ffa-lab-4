@@ -85,7 +85,7 @@ python scripts/validate_dataset.py datasets/training_finetune_dataset.jsonl --su
 # 8. Upload & submit fine‑tune (replace FILE IDs after upload)
 python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
 # -> note returned file-id e.g. file-abc123
-python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-3.5-turbo --suffix style-lab
+python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-4.1-nano-2025-04-14 --suffix style-lab
 
 # 9. Monitor job
 python scripts/finetune_submit.py monitor ftjob-XXXX
@@ -177,7 +177,7 @@ Upload then submit:
 ```bash
 python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
 # -> Capture returned file id
-python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-3.5-turbo --suffix style-lab
+python scripts/finetune_submit.py submit --training-file file-abc123 --model gpt-4.1-nano-2025-04-14 --suffix style-lab
 ```
 Monitor:
 ```bash
@@ -386,7 +386,7 @@ Submit your datasets for fine-tuning:
 python scripts/finetune_submit.py upload datasets/training_finetune_dataset.jsonl
 
 # Submit fine-tuning job
-python scripts/finetune_submit.py submit --training-file file-abc123 --validation-file file-def456 --model gpt-3.5-turbo --suffix vendetta-protocol
+python scripts/finetune_submit.py submit --training-file file-abc123 --validation-file file-def456 --model gpt-4.1-nano-2025-04-14 --suffix vendetta-protocol
 ```
 
 Monitor fine-tuning progress:
@@ -401,10 +401,10 @@ Generate content using your fine-tuned model:
 
 ```bash
 # Interactive session
-python scripts/generate.py interactive --model ft:gpt-3.5-turbo:my-org:vendetta-protocol:abc123
+python scripts/generate.py interactive --model ft:gpt-4.1-nano-2025-04-14:my-org:vendetta-protocol:abc123
 
 # Generate with specific template
-python scripts/generate.py generate character_voice --model ft:gpt-3.5-turbo:my-org:vendetta-protocol:abc123
+python scripts/generate.py generate character_voice --model ft:gpt-4.1-nano-2025-04-14:my-org:vendetta-protocol:abc123
 ```
 
 ## Writing Categories
